@@ -1,5 +1,5 @@
 <mujoco model="dyros_red_description">
-    <compiler angle="radian" />
+    <compiler angle="radian" meshdir="../meshes/"/>
     <size njmax="500" nconmax="100" />
 
 	<default>
@@ -60,7 +60,7 @@
 
     <worldbody>
 		<geom name="ground" type="plane" pos="0 0 0" size="2 2 .05" friction="1 0.005 0.0001" rgba="0.7 0.6 0.5 1"/>
-		<geom name="box" type="box" size="0.5 0.5 2" pos="-1.2 0 0"/>
+		<geom name="box" type="box" size="0.5 0.5 1" pos="-1.5 0 0.5"/>
 		<light mode='targetbodycom' target='base_link' directional='false' diffuse='.8 .8 .8' specular='0.3 0.3 0.3' pos='0 0 4.0' dir='0 0 -1'/>
 
 

@@ -1,18 +1,21 @@
 #include "mujoco_dyros.h"
 
-
 void state_publisher_init(const mjModel* m, mjData* d){
-  joint_state_msg_.name.resize(m->nu);
+  //joint_state_msg_.name.resize(m->nu);
   joint_state_msg_.position.resize(m->nu);
   joint_state_msg_.velocity.resize(m->nu);
-  joint_state_msg_.effort.resize(m->nu);
+  joint_state_msg_.torque.resize(m->nu);
 
 
   ROS_INFO("STATE_PUB_INIT");
-
+  //
   for(int i=0;i<m->nu;i++){
-  joint_state_msg_.name[i]=m->names[m->name_actuatoradr[i]];
+    std::string buffer(m->names+m->name_actuatoradr[i]);
+    //joint_state_msg_.name[i] = "";
+
   }
+
+
 
 
   ROS_INFO("number of generalized coordinates nq = %d", m->nq);
@@ -27,12 +30,14 @@ void state_publisher_init(const mjModel* m, mjData* d){
 
 
 void state_publisher(const mjModel* m, mjData* d){
+
+  joint_state_msg_.time=d->time;
   for(int i=0;i<m->nu;i++){
     joint_state_msg_.position[i]=d->qpos[i+7];
     joint_state_msg_.velocity[i]=d->qvel[i+6];
   }
   joint_state_msg_.header.stamp = ros::Time::now();
-  joint_state_pub_.publish(joint_state_msg_);
+  joint_state_pub.publish(joint_state_msg_);
 
 }
 
@@ -42,19 +47,37 @@ void state_publisher(const mjModel* m, mjData* d){
 
 
 
+void mycontrollerinit(){
+
+   ros_sim_started=true;
+
+
+
+
+
+
+   //mju_copy(d->ctrl,torque_mj,m->nu);
+
+
+
+
+}
+
+
 
 
 
 void mycontroller(const mjModel* m, mjData* d)
 {
   //ROS_INFO("SIMUL_LOOP");
-  static double time_ros_start=0;
-  if(time_ros_start==0){
+  static double controller_init=0;
+  if(controller_init==0){
 
     state_publisher_init(m,d);
 
     ROS_INFO("CONTROL INIT");
-    time_ros_start++;
+    mycontrollerinit();
+    controller_init++;
 
   }
 
@@ -66,7 +89,29 @@ void mycontroller(const mjModel* m, mjData* d)
 
   ros::spinOnce();
 
-  //ROS_INFO("MJ_TIME:%10.5f ros:%10.5f", d->time, ros::Time::now().toSec()-time_ros_start);
+  ROS_INFO_COND(showdebug, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
+}
+
+void jointset_callback(const mujoco_ros_msgs::JointStateConstPtr& msg)
+{
+
+
+}
+
+void sensor_callback(const mjModel* m, mjData* d, int num)
+{
+  ROS_INFO("%d",num);
+  for(int i=0;i<m->nsensor;i++){
+    //m->names
+
+  }
+    //d->sensordata
+
+}
+
+void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg){
+
+
 }
 
 
@@ -80,8 +125,6 @@ int main(int argc, char** argv)
     ros::NodeHandle nh("~");
 
 
-
-    ros_sim_start_time = ros::Time::now().toSec();
 
 
     // print version, check compatibility
@@ -104,10 +147,16 @@ int main(int argc, char** argv)
 
     // create widdow
     GLFWwindow* window = glfwCreateWindow(1200, 900, "Simulate", NULL, NULL);
+    GLFWwindow* window2 = glfwCreateWindow(800, 600, "Sub camera", NULL, NULL);
     if( !window )
     {
         glfwTerminate();
         return 1;
+    }
+    if( !window2 )
+    {
+      glfwTerminate();
+      return 1;
     }
 
     // make context current, disable v-sync
@@ -129,6 +178,13 @@ int main(int argc, char** argv)
     profilerinit();
     sensorinit();
 
+    glfwMakeContextCurrent(window2);
+    mjv_makeScene(&scn2, 1000);
+    mjv_defaultCamera(&cam2);
+    mjr_defaultContext(&con2);
+    mjr_makeContext(m,&con2,fontscale);
+
+    glfwMakeContextCurrent(window);
     // set GLFW callbacks
     glfwSetKeyCallback(window, keyboard);
     glfwSetCursorPosCallback(window, mouse_move);
@@ -136,6 +192,8 @@ int main(int argc, char** argv)
     glfwSetScrollCallback(window, scroll);
     glfwSetDropCallback(window, drop);
     glfwSetWindowRefreshCallback(window, render);
+
+
 
     // set MuJoCo time callback for profiling
     mjcb_time = timer;
@@ -149,23 +207,19 @@ int main(int argc, char** argv)
 
 
     mjcb_control=mycontroller;
+    mjcb_sensor=sensor_callback;
 
 
+    joint_state_pub = nh.advertise<mujoco_ros_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
 
-    joint_state_pub_ = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_set", 1);
-
-
-
-
-
-
+    joint_set = nh.subscribe("/mujoco_ros_interface/joint_set",100,jointset_callback);
+    joint_init = nh.subscribe("/mujoco_ros_interface/joint_init",100,jointinit_callback);
     // main loop
     while( !glfwWindowShouldClose(window) )
     {
         // simulate and render
         render(window);
-
-
+        //render_depth(window, window2);
 
         // handle events (this calls all callbacks)
         glfwPollEvents();
@@ -176,6 +230,8 @@ int main(int argc, char** argv)
     mj_deleteModel(m);
     mjr_freeContext(&con);
     mjv_freeScene(&scn);
+    mjr_freeContext(&con2);
+    mjv_freeScene(&scn2);
 
     // terminate
     glfwTerminate();

@@ -10,10 +10,7 @@
 #include <glfw3.h>
 #include <string.h>
 
-
-#include <sensor_msgs/JointState.h>
-#include <realtime_tools/realtime_publisher.h>
-
+#include <mujoco_ros_msgs/JointState.h>
 
 //-------------------------------- global variables -------------------------------------
 
@@ -23,7 +20,6 @@ mjData* d = 0;
 char lastfile[1000] = "";
 
 //
-double ros_sim_start_time ;
 
 // user state
 bool paused = false;
@@ -34,6 +30,8 @@ bool slowmotion = false;
 bool showdepth = false;
 bool showsensor = false;
 bool showprofiler = true;
+bool showdebug = false;
+bool showfixcam = false;
 int showhelp = 1;                   // 0: none; 1: brief; 2: full
 int fontscale = mjFONTSCALE_150;    // can be 100, 150, 200
 int keyreset = -1;                  // non-negative: reset to keyframe
@@ -56,6 +54,14 @@ mjrContext con;
 float depth_buffer[5120*2880];        // big enough for 5K screen
 unsigned char depth_rgb[1280*720*3];  // 1/4th of screen
 
+// For additional window
+mjvScene scn2;
+mjvCamera cam2;
+mjrContext con2;
+
+
+
+
 // selection and perturbation
 bool button_left = false;
 bool button_middle = false;
@@ -66,13 +72,16 @@ double window2buffer = 1;           // framebuffersize / windowsize (for scaled 
 
 // help strings
 const char help_title[] =
-"Help\n"
-"Option\n"
-"Info\n"
-"Depth\n"
-"Full screen\n"
-"Stereo\n"
+  "Help\n"
+  "Option\n"
+  "Info\n"
+  "Depth\n"
+  "Full screen\n"
+  "Stereo\n"
+  "Sensor\n"
 "Profiler\n"
+  "Debug\n"
+  "Fixcam\n"
 "Slow motion\n"
 "Key reset\n"
 "Pause\n"
@@ -107,6 +116,9 @@ const char help_content[] =
 "F5\n"
 "F6\n"
 "F7\n"
+"F8\n"
+"F9\n"
+"F10\n"
 "Enter\n"
 "Page Up/Down\n"
 "Space\n"
@@ -136,9 +148,37 @@ char opt_title[1000] = "";
 char opt_content[1000];
 
 //---------------ROS ----------
-double timer_ros;
-ros::Publisher joint_state_pub_;
-sensor_msgs::JointState joint_state_msg_;
+ros::Publisher joint_state_pub;
+ros::Subscriber joint_set;
+ros::Subscriber joint_init;
+mujoco_ros_msgs::JointState joint_state_msg_;
+
+
+
+bool ros_time_sync_reset;
+
+//reset start time
+bool ros_sim_started = true;
+
+
+
+
+ros::Time ros_sim_starttm;
+ros::Duration ros_time_paused;
+
+ros::Duration ros_sim_runtime;
+ros::Time ros_time_paused_starttm;
+ros::Time ros_time_paused_stoptm;
+ros::Time ros_time_sm_starttm;
+ros::Time ros_time_sm_stoptm;
+
+int timesync_count=0;
+double timesync_mean=0;
+
+void jointset_callback(const mujoco_ros_msgs::JointStateConstPtr& msg);
+void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg);
+
+
 
 //-------------------------------- profiler and sensor ----------------------------------
 
@@ -213,7 +253,16 @@ void simulation(void);
 // render
 void render(GLFWwindow* window);
 
+void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window);
 
+
+//-------------------------------- user created controller ---------------------------//
+
+void mycontroller();
+
+void mycontrollerinit();
+
+//-------------------------------- little math works --------------//
 
 
 

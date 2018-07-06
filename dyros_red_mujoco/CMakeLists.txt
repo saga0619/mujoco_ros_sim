@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(dyros_red_mujoco)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++11 -ofast)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,6 +10,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  mujoco_ros_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -102,6 +103,7 @@ find_package(Eigen3 REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+DEPENDS   mujoco_ros_msgs
 #  INCLUDE_DIRS include
 #  LIBRARIES dyros_red_mujoco
 #  CATKIN_DEPENDS roscpp std_msgs
@@ -137,6 +139,7 @@ file(GLOB LIB_MUJOCO ${MUJOCO_PATH}/bin/libmujoco150.so)
 
 add_library(dyros_red_mujoco_lib
     src/mujoco_dyros.cpp
+    #src/mujoco_ros_connect.cpp
 
     )
 
@@ -173,6 +176,7 @@ target_link_libraries(dyros_red_mujoco
    ${catkin_LIBRARIES}
    ${LIB_MUJOCO}
    GL
+   #lcm
    #GLU 
    #glut
 

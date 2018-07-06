@@ -422,6 +422,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
     switch( key )
     {
     case GLFW_KEY_F1:                   // help
+        ROS_INFO("showhelp : %d", showhelp);
         showhelp++;
         if( showhelp>2 )
             showhelp = 0;
@@ -459,12 +460,37 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         showprofiler = !showprofiler;
         break;
 
+    case GLFW_KEY_F9:                   // profiler
+      showdebug = !showdebug;
+      break;
+
+    case GLFW_KEY_F10:                   // showfixcam
+      showfixcam = !showfixcam;
+      break;
+
     case GLFW_KEY_ENTER:                // slow motion
         slowmotion = !slowmotion;
+
+        if(!slowmotion){
+          ROS_INFO_COND(showdebug," ---- SLOW MOTION DISABLED ----");
+          ros_sim_starttm = ros::Time::now() - ros::Duration(d->time);
+        }
+        else
+          ROS_INFO_COND(showdebug," ---- SLOW MOTION ENABLED ----");
         break;
 
     case GLFW_KEY_SPACE:                // pause
         paused = !paused;
+        if(paused){
+          ros_time_paused_starttm = ros::Time::now();
+          ROS_INFO_COND(showdebug," ---- SIMULATION PAUSED ----");
+        }
+        else{
+          ros_time_paused_stoptm = ros::Time::now();
+          ROS_INFO_COND(showdebug," ---- SIMULATION RESTARTED ----");
+          if(!slowmotion)
+            ros_sim_starttm=ros_sim_starttm + (ros_time_paused_stoptm - ros_time_paused_starttm);
+        }
         break;
 
     case GLFW_KEY_PAGE_UP:              // previous keyreset
@@ -488,6 +514,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         mj_forward(m, d);
         profilerupdate();
         sensorupdate();
+        mycontrollerinit();
         break;
 
     case GLFW_KEY_RIGHT:                // step forward
@@ -870,7 +897,8 @@ void simulation(void)
 
         // advance effective simulation time by 1/refreshrate
         mjtNum startsimtm = d->time;
-        double rostm_ = ros::Time::now().toSec();
+
+
         while( (d->time-startsimtm)*factor<1.0/refreshrate )
         {
             // clear old perturbations, apply new
@@ -881,9 +909,29 @@ void simulation(void)
                 mjv_applyPerturbForce(m, d, &pert);
             }
 
+            //ros_timer
+
+
             // run mj_step and count
             mj_step(m, d);
 
+            if(ros_sim_started==true){
+              ros_sim_starttm= ros::Time::now();
+              ros_sim_started=false;
+            }
+            ros_sim_runtime = ros::Time::now() - ros_sim_starttm;
+
+            if(!slowmotion){
+              if(d->time>ros_sim_runtime.toSec() ){
+                double timddif = d->time - ros_sim_runtime.toSec();
+                ros::Duration(timddif).sleep();
+                timesync_count++;
+                timesync_mean=(timesync_mean*timesync_count+timddif)/(timesync_count+1);
+                ROS_INFO_COND(showdebug,"TIMESYNC ACTIVE :: %8.5f ms  MEAN : %8.5f ms", timddif*1000, timesync_mean*1000);
+
+              }
+            }
+            //ROS_INFO("TIME_COMPARE : %8.4f %8.4f", d->time-startsimtm, ros::Time::now().toSec()-rostm_);
 
 
             // break on reset
@@ -891,6 +939,67 @@ void simulation(void)
                 break;
         }
     }
+}
+
+void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window){
+
+
+  mjrRect rect={0,0,0,0};
+  glfwGetFramebufferSize(sub_window, &rect.width, &rect.height);
+
+  ROS_INFO_COND(showdebug,"SHOWFIXCAM");
+  cam2.fixedcamid=0;
+  cam2.type = mjCAMERA_FIXED;
+
+  mjv_updateScene(m, d, &vopt, NULL, &cam2, mjCAT_ALL, &scn2);
+
+  // render
+  mjr_render(rect, &scn2, &con2);
+
+
+
+
+  /*static double lastrendertm = 0;
+
+  mjrRect rect_sub={0,0,0,0};
+
+
+
+
+  // get the depth buffer
+  mjr_readPixels(NULL, depth_buffer, rect, &con);
+
+
+
+  // convert to RGB, subsample by 4
+  for( int r=0; r<rect.height; r+=4 )
+      for( int c=0; c<rect.width; c+=4 )
+      {
+          // get subsampled address
+          int adr = (r/4)*(rect.width/4) + c/4;
+
+          // assign rgb
+          depth_rgb[3*adr] = depth_rgb[3*adr+1] = depth_rgb[3*adr+2] =
+              (unsigned char)((1.0f-depth_buffer[r*rect.width+c])*255.0f);
+      }
+
+
+
+
+  // show in bottom-right corner, offset for profiler and sensor
+  mjrRect bottomright = {
+      rect.left+rect.width/4,
+      rect.bottom+rect.height/4,
+      rect.width/4,
+      rect.height/4
+  };
+
+*/
+  //mjr_drawPixels(depth_rgb, NULL, bottomright, &con);
+
+  glfwSwapBuffers(sub_window);
+
+  glfwMakeContextCurrent(main_window);
 }
 
 
@@ -941,6 +1050,11 @@ void render(GLFWwindow* window)
             strcpy(keyresetstr, "qpos0");
         else
             sprintf(keyresetstr, "Key %d", keyreset);
+        char keydebug[20];
+        if(showdebug)
+          strcpy(keydebug,"TRUE");
+        else
+          strcpy(keydebug,"FALSE");
 
         // solver error
         mjtNum solerr = 0;
@@ -954,12 +1068,12 @@ void render(GLFWwindow* window)
         solerr = mju_log10(mju_max(mjMINVAL, solerr));
 
         // status
-        sprintf(status, "%-20.3f\n%d  (%d con)\n%.3f\n%.0f\n%.2f\n%.1f  (%d it)\n%.1f %.1f\n%s\n%s\n%s\n%s",
+        sprintf(status, "%-20.3f\n%d  (%d con)\n%.3f\n%.0f\n%.2f\n%.1f  (%d it)\n%.1f %.1f\n%s\n%s\n%s\n%s\n%s",
                 d->time,
                 d->nefc,
                 d->ncon,
                 d->timer[mjTIMER_STEP].duration / mjMAX(1, d->timer[mjTIMER_STEP].number),
-                1.0/(ros::Time::now().toSec()-lastrendertm),
+                1.0/(glfwGetTime()-lastrendertm),
                 d->energy[0]+d->energy[1],
                 solerr,
                 d->solver_iter,
@@ -968,24 +1082,28 @@ void render(GLFWwindow* window)
                 camstr,
                 mjFRAMESTRING[vopt.frame],
                 mjLABELSTRING[vopt.label],
-                keyresetstr
+                keyresetstr,
+                keydebug
             );
     }
 
     // FPS timing satistics
-    lastrendertm = ros::Time::now().toSec();
+    lastrendertm = glfwGetTime();
 
     // update scene
     mjv_updateScene(m, d, &vopt, &pert, &cam, mjCAT_ALL, &scn);
 
-    // render
     mjr_render(rect, &scn, &con);
+
+
 
     // show depth map
     if( showdepth )
     {
         // get the depth buffer
         mjr_readPixels(NULL, depth_buffer, rect, &con);
+
+
 
         // convert to RGB, subsample by 4
         for( int r=0; r<rect.height; r+=4 )
@@ -999,18 +1117,19 @@ void render(GLFWwindow* window)
                     (unsigned char)((1.0f-depth_buffer[r*rect.width+c])*255.0f);
             }
 
+
+
         // show in bottom-right corner, offset for profiler and sensor
         mjrRect bottomright = {
-            smallrect.left+(3*smallrect.width)/4,
+            smallrect.left+smallrect.width-rect.width/4,
             smallrect.bottom,
-            smallrect.width/4,
-            smallrect.height/4
+            rect.width/4,
+            rect.height/4
         };
         if( showsensor )
             bottomright.left -= smallrect.width/4;
         mjr_drawPixels(depth_rgb, NULL, bottomright, &con);
     }
-
     // show overlays
     if( showhelp==1 )
         mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, smallrect, "Help  ", "F1  ", &con);
@@ -1024,7 +1143,7 @@ void render(GLFWwindow* window)
             mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, smallrect, "PAUSED", 0, &con);
         else
             mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, smallrect,
-                "Time\nSize\nCPU\nFPS\nEnergy\nSolver\nFwdInv\nCamera\nFrame\nLabel\nReset", status, &con);
+                "Time\nSize\nCPU\nFPS\nEnergy\nSolver\nFwdInv\nCamera\nFrame\nLabel\nReset\nDebug", status, &con);
     }
 
     // show options
