@@ -139,7 +139,6 @@ file(GLOB LIB_MUJOCO ${MUJOCO_PATH}/bin/libmujoco150.so)
 
 add_library(dyros_red_mujoco_lib
     src/mujoco_dyros.cpp
-    #src/mujoco_ros_connect.cpp
 
     )
 
@@ -176,7 +175,6 @@ target_link_libraries(dyros_red_mujoco
    ${catkin_LIBRARIES}
    ${LIB_MUJOCO}
    GL
-   #lcm
    #GLU 
    #glut
 

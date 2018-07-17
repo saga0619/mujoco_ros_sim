@@ -1,5 +1,279 @@
 #include "mujoco_dyros.h"
 
+void mujoco_ros_connector_init(const mjModel* m, mjData* d){
+
+
+  std::cout << ":::: MUJOCO_ROS_CONNECTOR INITIALIZE ::::" <<std::endl;
+  std::cout << " MODEL DETAIL " <<std::endl;
+  std::cout << " number of generalized coordinated nq = "<< m->nq<<std::endl;
+  std::cout<<"number of degrees of freedom nv = "<<m->nv<<std::endl;
+  std::cout<<"number of actuators/controls nu = "<<m->nu<<std::endl;
+  std::cout<<"number of joints njnt = "<< m->njnt<<std::endl;
+  std::cout<<"number of keyframe = "<< m->nkey<<std::endl;
+
+
+
+
+  std::cout<<"ACTUATOR NAMES"<<std::endl;
+
+  for(int i=0;i<m->nu;i++){
+    std::string buffer(m->names + m->name_actuatoradr[i]);
+    std::cout<<"id : "<<i<<"  name : "<<buffer<<std::endl;
+  }
+
+ std::cout<<"JOINT NAMES"<<std::endl;
+  for(int i=0;i<m->njnt;i++){
+    std::string buffer(m->names + m->name_jntadr[i]);
+    std::cout<<"id : "<<i<<"  name : "<<buffer<<std::endl;
+  }
+
+  std::cout << "SENSOR NAMES "<<std::endl;
+  for(int i=0;i<m->nsensor;i++){
+    std::string buffer(m->names + m->name_sensoradr[i]);
+    std::cout<<"sensor id : "<<i<<"  name : "<<buffer<<"  data size : "<<m->sensor_dim[i]<<std::endl;
+  }
+
+
+
+  joint_set_msg_.position.resize(m->nu);
+  joint_set_msg_.torque.resize(m->nu);
+  for(int i=0;i<m->nu;i++){
+
+    joint_set_msg_.torque[i] = 0.0;
+  }
+
+
+  torque_mj = mj_stackAlloc(d, (int)m->nu);
+
+  /*
+  float time_waiting = 0.0;
+  ros::Time wait_st = ros::Time::now();
+  bool connected = true;
+
+  std::cout<<" Waiting for controller ...."<<std::endl;
+  while(time_waiting < 5){
+
+    time_waiting = (ros::Time::now()- wait_st).toSec();
+
+    if(connected==true)time_waiting = 10;
+  }
+  if(connected==false){
+    ROS_ERROR("Controller Connection Failed");
+  }
+  else{
+    ROS_INFO("Controller Connected ");
+  }
+
+  */
+
+
+  state_publisher_init(m,d);
+
+}
+
+
+
+void state_publisher_init(const mjModel* m, mjData* d){
+
+  ROS_INFO("STATE_PUBLISHER_INIT");
+
+  joint_state_msg_.name.resize(m->nv);
+  joint_state_msg_.position.resize(m->nv);
+  joint_state_msg_.velocity.resize(m->nv);
+  joint_state_msg_.torque.resize(m->nv);
+
+  sensor_state_msg_.sensor.resize(m->nsensor);
+
+  //
+  for(int i=0;i<m->nu;i++){
+    std::string buffer(m->names+m->name_actuatoradr[i]);
+    joint_state_msg_.name[i+6] = buffer;
+
+  }
+
+    joint_state_msg_.name[0] = "virtual_x";
+    joint_state_msg_.name[1] = "virtual_y";
+    joint_state_msg_.name[2] = "virtual_z";
+    joint_state_msg_.name[3] = "virtual_roll";
+    joint_state_msg_.name[4] = "virtual_pitch";
+    joint_state_msg_.name[5] = "virtual_yaw";
+
+
+  for(int i=0;i<m->nsensor;i++){
+    std::string buffer(m->names+m->name_sensoradr[i]);
+    sensor_state_msg_.sensor[i].name=buffer;
+    sensor_state_msg_.sensor[i].data.resize(m->sensor_dim[i]);
+  }
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+void state_publisher(const mjModel* m, mjData* d){
+
+  joint_state_msg_.time=d->time;
+  for(int i=0;i<m->nu;i++){
+    joint_state_msg_.position[i+6]=d->qpos[i+7];
+    joint_state_msg_.velocity[i+6]=d->qvel[i+6];
+  }
+
+ Eigen::Quaterniond q;
+ q.w()=d->qpos[3];
+ q.x()=d->qpos[4];
+ q.y()=d->qpos[5];
+ q.z()=d->qpos[6];
+
+ Eigen::Vector3d euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
+
+
+  for(int i=0;i<3;i++){
+      joint_state_msg_.position[i] = d->qpos[i];
+      joint_state_msg_.position[i+3] = euler[i];
+      joint_state_msg_.velocity[i] = d->qvel[i];
+      joint_state_msg_.velocity[i+3] = d->qvel[i+3];
+  }
+  joint_state_msg_.header.stamp = ros::Time::now();
+
+
+  for(int i=0;i<m->nsensor;i++){
+
+    for(int n=0; n<m->sensor_dim[i]; n++){
+      sensor_state_msg_.sensor[i].data[n]=d->sensordata[m->sensor_adr[i]+n];
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+  sensor_state_pub.publish(sensor_state_msg_);
+  joint_state_pub.publish(joint_state_msg_);
+
+
+
+
+
+
+
+
+}
+
+
+
+
+void mycontrollerinit(){
+
+   ros_sim_started=true;
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+void mycontroller(const mjModel* m, mjData* d)
+{
+
+
+
+
+  state_publisher(m,d);
+
+  for(int i=0;i<m->nu;i++){
+    torque_mj[i]=joint_set_msg_.torque[i];
+  }
+  mju_copy(d->ctrl,torque_mj, m->nu);
+
+  ros::spinOnce();
+
+  ROS_INFO_COND(showdebug, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
+}
+
+
+
+
+
+//---------------------callback functions --------------------------------
+
+void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr& msg)
+{
+
+  if(joint_set_msg_.torque.size()==m->nu){
+
+    for(int i=0;i<m->nu;i++){
+      joint_set_msg_.torque[i]= msg->torque[i];
+
+    }
+  }
+  else{
+
+    ROS_ERROR(" Actuator Size Not match ");
+  }
+
+}
+
+void sensor_callback(const mjModel* m, mjData* d, int num)
+{
+  ROS_INFO("%d",num);
+  for(int i=0;i<m->nsensor;i++){
+    //m->names
+
+  }
+    //d->sensordata
+
+}
+
+void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg){
+
+
+}
+
+
+
+
+void sim_command_callback(const std_msgs::StringConstPtr &msg){
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 //-------------------------------- profiler and sensor ----------------------------------
@@ -354,8 +628,17 @@ void loadmodel(GLFWwindow* window, const char* filename)
     mj_deleteModel(m);
     m = mnew;
     d = mj_makeData(m);
+    vopt.geomgroup[2]=false;
+    if( keyreset>=0 && keyreset<m->nkey )
+    {
+        d->time = m->key_time[keyreset];
+        mju_copy(d->qpos, m->key_qpos+keyreset*m->nq, m->nq);
+        mju_copy(d->qvel, m->key_qvel+keyreset*m->nv, m->nv);
+        mju_copy(d->act, m->key_act+keyreset*m->na, m->na);
+    }
     mj_forward(m, d);
 
+    mujoco_ros_connector_init(m,d);
     // save filename for reload
     strcpy(lastfile, filename);
 
@@ -365,7 +648,7 @@ void loadmodel(GLFWwindow* window, const char* filename)
     // clear perturbation state and keyreset
     pert.active = 0;
     pert.select = 0;
-    keyreset = -1;
+    keyreset = 0;
 
     // center and scale view, update scene
     autoscale(window);
@@ -514,7 +797,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         mj_forward(m, d);
         profilerupdate();
         sensorupdate();
-        mycontrollerinit();
+        mujoco_ros_connector_init(m,d);
         break;
 
     case GLFW_KEY_RIGHT:                // step forward
@@ -1033,8 +1316,8 @@ void render(GLFWwindow* window)
     simulation();
 
     // update simulation statistics
-    if( !paused )
-    {
+    //if( !paused )
+   // {
         // camera string
         char camstr[20];
         if( cam.type==mjCAMERA_FREE )
@@ -1085,7 +1368,7 @@ void render(GLFWwindow* window)
                 keyresetstr,
                 keydebug
             );
-    }
+    //}
 
     // FPS timing satistics
     lastrendertm = glfwGetTime();
@@ -1139,12 +1422,22 @@ void render(GLFWwindow* window)
     // show info
     if( showinfo )
     {
-        if( paused )
-            mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, smallrect, "PAUSED", 0, &con);
-        else
             mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, smallrect,
                 "Time\nSize\nCPU\nFPS\nEnergy\nSolver\nFwdInv\nCamera\nFrame\nLabel\nReset\nDebug", status, &con);
     }
+
+
+    mjrRect bottomcenter = {
+      smallrect.left + smallrect.width/2,
+      smallrect.bottom,
+      smallrect.width,
+      smallrect.height
+    };
+
+    if( paused )
+        mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, bottomcenter, " PAUSED", 0, &con);
+
+
 
     // show options
     if( showoption )

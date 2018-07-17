@@ -1,118 +1,9 @@
 #include "mujoco_dyros.h"
 
-void state_publisher_init(const mjModel* m, mjData* d){
-  //joint_state_msg_.name.resize(m->nu);
-  joint_state_msg_.position.resize(m->nu);
-  joint_state_msg_.velocity.resize(m->nu);
-  joint_state_msg_.torque.resize(m->nu);
-
-
-  ROS_INFO("STATE_PUB_INIT");
-  //
-  for(int i=0;i<m->nu;i++){
-    std::string buffer(m->names+m->name_actuatoradr[i]);
-    //joint_state_msg_.name[i] = "";
-
-  }
 
 
 
 
-  ROS_INFO("number of generalized coordinates nq = %d", m->nq);
-  ROS_INFO("number of degrees of freedom nv = %d", m->nv);
-  ROS_INFO("number of actuators/controls nu = %d", m->nu);
-  ROS_INFO("number of joints njnt = %d", m->njnt);
-
-
-}
-
-
-
-
-void state_publisher(const mjModel* m, mjData* d){
-
-  joint_state_msg_.time=d->time;
-  for(int i=0;i<m->nu;i++){
-    joint_state_msg_.position[i]=d->qpos[i+7];
-    joint_state_msg_.velocity[i]=d->qvel[i+6];
-  }
-  joint_state_msg_.header.stamp = ros::Time::now();
-  joint_state_pub.publish(joint_state_msg_);
-
-}
-
-
-
-
-
-
-
-void mycontrollerinit(){
-
-   ros_sim_started=true;
-
-
-
-
-
-
-   //mju_copy(d->ctrl,torque_mj,m->nu);
-
-
-
-
-}
-
-
-
-
-
-void mycontroller(const mjModel* m, mjData* d)
-{
-  //ROS_INFO("SIMUL_LOOP");
-  static double controller_init=0;
-  if(controller_init==0){
-
-    state_publisher_init(m,d);
-
-    ROS_INFO("CONTROL INIT");
-    mycontrollerinit();
-    controller_init++;
-
-  }
-
-
-
-  state_publisher(m,d);
-
-
-
-  ros::spinOnce();
-
-  ROS_INFO_COND(showdebug, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
-}
-
-void jointset_callback(const mujoco_ros_msgs::JointStateConstPtr& msg)
-{
-
-
-}
-
-void sensor_callback(const mjModel* m, mjData* d, int num)
-{
-  ROS_INFO("%d",num);
-  for(int i=0;i<m->nsensor;i++){
-    //m->names
-
-  }
-    //d->sensordata
-
-}
-
-void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg){
-
-
-}
 
 
 
@@ -120,11 +11,9 @@ void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg){
 
 int main(int argc, char** argv)
 {
-
+    //ros init
     ros::init(argc, argv, "mujoco");
     ros::NodeHandle nh("~");
-
-
 
 
     // print version, check compatibility
@@ -132,8 +21,14 @@ int main(int argc, char** argv)
     if( mjVERSION_HEADER!=mj_version() )
         mju_error("Headers and library have different versions");
 
+
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
+        ROS_INFO_COND(false,"Current working dir: %s\n", cwd);
+
     // activate MuJoCo license
-    mj_activate("/home/saga/mjpro150/mjkey.txt");
+    // locate mjkey.txt file at /home/<usrname>
+    mj_activate("mjkey.txt");
 
     // init GLFW
     if (!glfwInit())
@@ -147,7 +42,7 @@ int main(int argc, char** argv)
 
     // create widdow
     GLFWwindow* window = glfwCreateWindow(1200, 900, "Simulate", NULL, NULL);
-    GLFWwindow* window2 = glfwCreateWindow(800, 600, "Sub camera", NULL, NULL);
+    GLFWwindow* window2;// = glfwCreateWindow(800, 600, "Sub camera", NULL, NULL);
     if( !window )
     {
         glfwTerminate();
@@ -178,11 +73,14 @@ int main(int argc, char** argv)
     profilerinit();
     sensorinit();
 
+    // Second display for fixed cam, but not working. why?//
+    /*
     glfwMakeContextCurrent(window2);
     mjv_makeScene(&scn2, 1000);
     mjv_defaultCamera(&cam2);
     mjr_defaultContext(&con2);
     mjr_makeContext(m,&con2,fontscale);
+    */
 
     glfwMakeContextCurrent(window);
     // set GLFW callbacks
@@ -205,15 +103,21 @@ int main(int argc, char** argv)
 
 
 
-
+    //register callback function//
     mjcb_control=mycontroller;
     mjcb_sensor=sensor_callback;
 
 
-    joint_state_pub = nh.advertise<mujoco_ros_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
 
-    joint_set = nh.subscribe("/mujoco_ros_interface/joint_set",100,jointset_callback);
+
+    //register publisher & subscriber
+    joint_state_pub = nh.advertise<mujoco_ros_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
+    sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states",1);
+    joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
     joint_init = nh.subscribe("/mujoco_ros_interface/joint_init",100,jointinit_callback);
+    sim_command_sub = nh.subscribe("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
+    sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con",1);
+
     // main loop
     while( !glfwWindowShouldClose(window) )
     {

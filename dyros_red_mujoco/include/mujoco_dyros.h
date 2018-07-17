@@ -11,6 +11,9 @@
 #include <string.h>
 
 #include <mujoco_ros_msgs/JointState.h>
+#include <mujoco_ros_msgs/SensorState.h>
+#include <mujoco_ros_msgs/JointSet.h>
+#include <std_msgs/String.h>
 
 //-------------------------------- global variables -------------------------------------
 
@@ -19,10 +22,10 @@ mjModel* m = 0;
 mjData* d = 0;
 char lastfile[1000] = "";
 
-//
+
 
 // user state
-bool paused = false;
+bool paused = true;
 bool showoption = false;
 bool showinfo = true;
 bool showfullscreen = false;
@@ -34,7 +37,7 @@ bool showdebug = false;
 bool showfixcam = false;
 int showhelp = 1;                   // 0: none; 1: brief; 2: full
 int fontscale = mjFONTSCALE_150;    // can be 100, 150, 200
-int keyreset = -1;                  // non-negative: reset to keyframe
+int keyreset = 0;                  // non-negative: reset to keyframe
 
 // abstract visualization
 mjvScene scn;
@@ -149,9 +152,14 @@ char opt_content[1000];
 
 //---------------ROS ----------
 ros::Publisher joint_state_pub;
+ros::Publisher sensor_state_pub;
 ros::Subscriber joint_set;
 ros::Subscriber joint_init;
+ros::Subscriber sim_command_sub;
+ros::Publisher sim_command_pub;
 mujoco_ros_msgs::JointState joint_state_msg_;
+mujoco_ros_msgs::JointSet joint_set_msg_;
+mujoco_ros_msgs::SensorState sensor_state_msg_;
 
 
 
@@ -172,11 +180,19 @@ ros::Time ros_time_paused_stoptm;
 ros::Time ros_time_sm_starttm;
 ros::Time ros_time_sm_stoptm;
 
+
+
+void mujoco_ros_connector_init();
+
+
+
+
+
 int timesync_count=0;
 double timesync_mean=0;
 
-void jointset_callback(const mujoco_ros_msgs::JointStateConstPtr& msg);
-void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg);
+
+mjtNum* torque_mj;
 
 
 
@@ -258,9 +274,24 @@ void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window);
 
 //-------------------------------- user created controller ---------------------------//
 
-void mycontroller();
+void mycontroller(const mjModel* m, mjData* d);
 
 void mycontrollerinit();
+
+void state_publisher(const mjModel* m, mjData* d);
+
+void state_publisher_init(const mjModel* m, mjData* d);
+
+void sensor_callback(const mjModel* m, mjData* d, int num);
+
+void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr& msg);
+
+void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg);
+
+void sim_command_callback(const std_msgs::StringConstPtr& msg);
+
+
+
 
 //-------------------------------- little math works --------------//
 

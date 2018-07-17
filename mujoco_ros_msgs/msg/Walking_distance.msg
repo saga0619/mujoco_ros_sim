@@ -1,2 +1,0 @@
-int32 walk_distance_10
-int32 walk_distance_1

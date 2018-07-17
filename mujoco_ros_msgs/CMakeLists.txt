@@ -11,11 +11,12 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
+  JointInit.msg
   JointSet.msg
   JointState.msg
-  JointCommand.msg
-  TaskCommand.msg
-  WalkingCommand.msg
+  SensorState.msg
+  SensorBase.msg
+  SimstatusM2C.msg
 )
 
 

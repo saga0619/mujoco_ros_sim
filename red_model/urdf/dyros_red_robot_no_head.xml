@@ -203,6 +203,19 @@
                         <geom size="0.054 0.045" pos="-0.115 0 0" quat="0.707107 0 0.707107 0" type="cylinder" class="cls" />
                         <geom size="0.04 0.035" pos="0.023 0.154 0.185" type="cylinder" class="cls" />
                         <geom size="0.04 0.035" pos="0.023 -0.154 0.185" type="cylinder" class="cls" />
+
+
+                        <geom class="viz" rgba="0.20313 0.20313 0.20313 1" pos="-0.036 0 0.3795" mesh="neck" />
+                        <geom class="viz" rgba="0.85938 0.07813 0.23438 1" pos="-0.036 0 0.407" mesh="head" />
+						<geom class="cls" size="0.08 0.07 0.1" type="box" pos="-0.016 0 0.547"/>
+						<camera name="Head camera" euler="0 -1.5708 -1.5708" fovy="80" pos="0.084 0 0.647"/>
+
+
+
+
+
+
+
                         <body name="R_Shoulder1_Link" pos="0.023 -0.154 0.2275">
                             <inertial pos="-3e-05 -0.00397 0.06029" quat="0.678735 -0.0962618 0.0973029 0.721516" mass="1.6762" diaginertia="0.00195894 0.0019255 0.00165624" />
                             <joint name="R_Shoulder1_Joint" pos="0 0 0" axis="0 0 1" limited="true" range="-1.54 2.09" />
@@ -305,18 +318,7 @@
                                 </body>
                             </body>
                         </body>
-						<body name="Neck" pos="-0.036 0 0.3795">
-                            <inertial pos="0 -0.00247 0.02752" quat="0.401331 0.402035 -0.582442 0.581432" mass="0.37746" diaginertia="0.000226161 0.000226016 0.000105591" />
-                            <joint name="Neck_Joint" pos="0 0 0" axis="0 0 1" limited="true" range="-2.094 2.094" />
-                            <geom class="viz" rgba="0.20313 0.20313 0.20313 1" mesh="neck" />
-                            <body name="Head" pos="0 0 0.0275">
-                                <inertial pos="0.01311 2e-05 0.12168" quat="0.681514 0.186859 0.185855 0.682701" mass="2.712" diaginertia="0.0107031 0.00905101 0.00687919" />
-                                <joint name="Head_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.094 2.094" />
-                                <geom class="viz" rgba="0.85938 0.07813 0.23438 1" mesh="head" />
-								<geom class="cls" size="0.08 0.07 0.1" type="box" pos="0.02 0 0.14"/>
-								<camera name="Head camera" euler="0 -1.5708 -1.5708" fovy="80" pos="0.1 0 0.1"/>
-                            </body>
-                        </body>
+						
                     </body>
                 </body>
             </body>
@@ -342,8 +344,8 @@
 		<motor name="Waist1_Motor" joint="Waist1_Joint"/>
 		<motor name="Waist2_Motor" joint="Waist2_Joint"/>
 		<motor name="Upperbody_Motor" joint="Upperbody_Joint"/>
-		<motor name="Neck_Motor" joint="Neck_Joint"/>
-		<motor name="Head_Motor" joint="Head_Joint"/>
+		<!--motor name="Neck_Motor" joint="Neck_Joint"/-->
+		<!--motor name="Head_Motor" joint="Head_Joint"/-->
 		
 
 		<motor name="R_Shoulder1_Motor" joint="R_Shoulder1_Joint"/>
