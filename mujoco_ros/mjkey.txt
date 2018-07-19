@@ -1,0 +1,20 @@
+MuJoCo Pro Personal license activation key, number 52172, type 6.
+
+Issued to JuneWhee Ahn <june992@snu.ac.kr>.
+
+Expires September 7, 2018.
+
+This file activates MuJoCo Pro on a single computer with id:
+LINUX_1S0_8X3GA000000123PD2236
+
+Do not modify this file. Its entire content, including the
+plain text section, is used by the activation manager.
+
+5d169bdd51ac3398bc0e4e2d149169bdf39cc6c1aaeb10e68011799bc4ab27e5
+ced50410852b923da37500ecfebaea015376962e87520f6961e463896f273909
+9c34ad06072dd2837b7176370135df91fb88f2b320accaa38d5ae94d73648db9
+098574db3ab929ae980c44abdadd9f6be4bbc25e1dd13e71e758443c376e452a
+850ccdaa53e6c28134d136b9cde7f0772755f5f755c1229b698c3b42dfb20b92
+e2a81ceada2325b45a45768287450319c46fb809315650367f665d6cb4a16485
+e758703c7b373086b08f93b4b4dd66277d567a1358dd50f6e422b4c5068ca02f
+a548de590fa0da506ac06960a76586022a3030f0f51f53ea54557153b98586d4
