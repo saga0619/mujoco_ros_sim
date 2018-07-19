@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 {
     //ros init
-    ros::init(argc, argv, "mujoco");
+    ros::init(argc, argv, "mujoco_ros");
     ros::NodeHandle nh("~");
     std::string key_file;
     nh.param<std::string>("license", key_file, "mjkey.txt");
@@ -44,27 +44,28 @@ int main(int argc, char** argv)
 
     // create widdow
     GLFWwindow* window = glfwCreateWindow(1200, 900, "Simulate", NULL, NULL);
-    GLFWwindow* window2;// = glfwCreateWindow(800, 600, "Sub camera", NULL, NULL);
+    //GLFWwindow* window2;// = glfwCreateWindow(800, 600, "Sub camera", NULL, NULL);
     if( !window )
     {
         glfwTerminate();
         return 1;
     }
+    /*
     if( !window2 )
     {
       glfwTerminate();
       return 1;
     }
-
+*/
     // make context current, disable v-sync
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     // save window-to-framebuffer pixel scaling (needed for OSX scaling)
     int width, width1, height;
     glfwGetWindowSize(window, &width, &height);
     glfwGetFramebufferSize(window, &width1, &height);
-    window2buffer = (double)width1 / (double)width;
+    //window2buffer = (double)width1 / (double)width;
 
     // init MuJoCo rendering, get OpenGL info
     mjv_makeScene(&scn, 1000);
@@ -98,15 +99,11 @@ int main(int argc, char** argv)
     // set MuJoCo time callback for profiling
     mjcb_time = timer;
 
-    // load model if filename given as argument
-    if( argc==2 )
-        loadmodel(window, argv[2]);
-
-
+    // load model if filename given as ros::param
     std::string model_file;
     if(nh.getParam("model_file",model_file))
         loadmodel(window,model_file.c_str());
-ROS_INFO("model is at %s", model_file.c_str());
+    ROS_INFO("model is at %s", model_file.c_str());
 
     //register callback function//
     mjcb_control=mycontroller;
@@ -116,15 +113,17 @@ ROS_INFO("model is at %s", model_file.c_str());
 
 
     //register publisher & subscriber
-    joint_state_pub = nh.advertise<mujoco_ros_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
+    joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
+    sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time",1);
     sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states",1);
-    joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
-    joint_init = nh.subscribe("/mujoco_ros_interface/joint_init",100,jointinit_callback);
+    joint_set = nh.subscribe<sensor_msgs::JointState>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
     sim_command_sub = nh.subscribe("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con",1);
 
+
+
     // main loop
-    while( !glfwWindowShouldClose(window) )
+    while(( !glfwWindowShouldClose(window) )&&ros::ok() )
     {
         // simulate and render
         render(window);
@@ -145,6 +144,7 @@ ROS_INFO("model is at %s", model_file.c_str());
     // terminate
     glfwTerminate();
     mj_deactivate();
+
     return 0;
 }
 

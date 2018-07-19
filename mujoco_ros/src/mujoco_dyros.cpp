@@ -36,15 +36,17 @@ void mujoco_ros_connector_init(const mjModel* m, mjData* d){
 
 
   joint_set_msg_.position.resize(m->nu);
-  joint_set_msg_.torque.resize(m->nu);
-  for(int i=0;i<m->nu;i++){
+  joint_set_msg_.effort.resize(m->nu);
 
-    joint_set_msg_.torque[i] = 0.0;
-  }
 
 
   torque_mj = mj_stackAlloc(d, (int)m->nu);
 
+  for(int i=0;i<m->nu;i++){
+
+    joint_set_msg_.effort[i] = 0.0;
+    torque_mj[i] =0.0;
+  }
   /*
   float time_waiting = 0.0;
   ros::Time wait_st = ros::Time::now();
@@ -80,7 +82,7 @@ void state_publisher_init(const mjModel* m, mjData* d){
   joint_state_msg_.name.resize(m->nv);
   joint_state_msg_.position.resize(m->nv);
   joint_state_msg_.velocity.resize(m->nv);
-  joint_state_msg_.torque.resize(m->nv);
+  joint_state_msg_.effort.resize(m->nv);
 
   sensor_state_msg_.sensor.resize(m->nsensor);
 
@@ -104,24 +106,14 @@ void state_publisher_init(const mjModel* m, mjData* d){
     sensor_state_msg_.sensor[i].name=buffer;
     sensor_state_msg_.sensor[i].data.resize(m->sensor_dim[i]);
   }
-
-
-
-
-
-
-
-
-
-
 }
 
 
 
 
 void state_publisher(const mjModel* m, mjData* d){
+  sim_time.data=d->time;
 
-  joint_state_msg_.time=d->time;
   for(int i=0;i<m->nu;i++){
     joint_state_msg_.position[i+6]=d->qpos[i+7];
     joint_state_msg_.velocity[i+6]=d->qvel[i+6];
@@ -135,7 +127,6 @@ void state_publisher(const mjModel* m, mjData* d){
 
  Eigen::Vector3d euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
 
-
   for(int i=0;i<3;i++){
       joint_state_msg_.position[i] = d->qpos[i];
       joint_state_msg_.position[i+3] = euler[i];
@@ -146,51 +137,21 @@ void state_publisher(const mjModel* m, mjData* d){
 
 
   for(int i=0;i<m->nsensor;i++){
-
     for(int n=0; n<m->sensor_dim[i]; n++){
       sensor_state_msg_.sensor[i].data[n]=d->sensordata[m->sensor_adr[i]+n];
     }
-
   }
-
-
-
-
-
-
-
-
 
   sensor_state_pub.publish(sensor_state_msg_);
   joint_state_pub.publish(joint_state_msg_);
-
-
-
-
-
-
-
-
+  sim_time_pub.publish(sim_time);
 }
 
 
 
 
 void mycontrollerinit(){
-
    ros_sim_started=true;
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 
@@ -199,18 +160,14 @@ void mycontrollerinit(){
 
 void mycontroller(const mjModel* m, mjData* d)
 {
-
-
-
-
   state_publisher(m,d);
-
+  ros::spinOnce();
   for(int i=0;i<m->nu;i++){
-    torque_mj[i]=joint_set_msg_.torque[i];
+    torque_mj[i]=joint_set_msg_.effort[i];
   }
   mju_copy(d->ctrl,torque_mj, m->nu);
 
-  ros::spinOnce();
+
 
   ROS_INFO_COND(showdebug, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
 }
@@ -221,13 +178,13 @@ void mycontroller(const mjModel* m, mjData* d)
 
 //---------------------callback functions --------------------------------
 
-void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr& msg)
+void jointset_callback(const sensor_msgs::JointStateConstPtr& msg)
 {
 
-  if(joint_set_msg_.torque.size()==m->nu){
+  if(joint_set_msg_.effort.size()==m->nu){
 
     for(int i=0;i<m->nu;i++){
-      joint_set_msg_.torque[i]= msg->torque[i];
+      joint_set_msg_.effort[i]= msg->effort[i];
 
     }
   }
@@ -248,14 +205,6 @@ void sensor_callback(const mjModel* m, mjData* d, int num)
     //d->sensordata
 
 }
-
-void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg){
-
-
-}
-
-
-
 
 void sim_command_callback(const std_msgs::StringConstPtr &msg){
 
@@ -705,7 +654,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
     switch( key )
     {
     case GLFW_KEY_F1:                   // help
-        ROS_INFO("showhelp : %d", showhelp);
+
         showhelp++;
         if( showhelp>2 )
             showhelp = 0;
@@ -716,7 +665,10 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         break;
 
     case GLFW_KEY_F3:                   // info
-        showinfo = !showinfo;
+
+        showinfo++;
+        if(showinfo > 2){
+          showinfo=0;}
         break;
 
     case GLFW_KEY_F4:                   // depth
@@ -1163,19 +1115,25 @@ void simulation(void)
     // paused
     if( paused )
     {
-        // apply pose perturbations, run mj_forward
-        if( pert.active )
-        {
-            mjv_applyPerturbPose(m, d, &pert, 1);      // move mocap and dynamic bodies
-            mj_forward(m, d);
+        ros::Time ref_time;
+        ref_time=ros::Time::now();
+
+        while(((ros::Time::now()-ref_time).toSec()<1.0/refreshrate)&&ros::ok()){
+
+          // apply pose perturbations, run mj_forward
+          if( pert.active )
+          {
+              mjv_applyPerturbPose(m, d, &pert, 1);      // move mocap and dynamic bodies
+              mj_forward(m, d);
+          }
+          if((d->time>0.0)&& ros_sim_started )
+              break;
         }
     }
 
     // running
     else
     {
-
-
         // slow motion factor: 10x
         mjtNum factor = (slowmotion ? 10 : 1);
 
@@ -1183,7 +1141,7 @@ void simulation(void)
         mjtNum startsimtm = d->time;
 
 
-        while( (d->time-startsimtm)*factor<1.0/refreshrate )
+        while( ((d->time-startsimtm)*factor<1.0/refreshrate )&&ros::ok())
         {
             // clear old perturbations, apply new
             mju_zero(d->xfrc_applied, 6*m->nbody);
@@ -1225,6 +1183,7 @@ void simulation(void)
     }
 }
 
+//detpth output for vision simulation, but not working
 void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window){
 
 
@@ -1240,35 +1199,21 @@ void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window){
   // render
   mjr_render(rect, &scn2, &con2);
 
-
-
-
   /*static double lastrendertm = 0;
-
   mjrRect rect_sub={0,0,0,0};
-
-
-
 
   // get the depth buffer
   mjr_readPixels(NULL, depth_buffer, rect, &con);
 
-
-
   // convert to RGB, subsample by 4
   for( int r=0; r<rect.height; r+=4 )
-      for( int c=0; c<rect.width; c+=4 )
-      {
+      for( int c=0; c<rect.width; c+=4 )      {
           // get subsampled address
           int adr = (r/4)*(rect.width/4) + c/4;
-
           // assign rgb
           depth_rgb[3*adr] = depth_rgb[3*adr+1] = depth_rgb[3*adr+2] =
               (unsigned char)((1.0f-depth_buffer[r*rect.width+c])*255.0f);
       }
-
-
-
 
   // show in bottom-right corner, offset for profiler and sensor
   mjrRect bottomright = {
@@ -1277,12 +1222,9 @@ void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window){
       rect.width/4,
       rect.height/4
   };
-
 */
   //mjr_drawPixels(depth_rgb, NULL, bottomright, &con);
-
   glfwSwapBuffers(sub_window);
-
   glfwMakeContextCurrent(main_window);
 }
 
@@ -1310,6 +1252,7 @@ void render(GLFWwindow* window)
 
         // swap buffers
         glfwSwapBuffers(window);
+        //glFinish();
         return;
     }
 
@@ -1369,6 +1312,14 @@ void render(GLFWwindow* window)
                 keyresetstr,
                 keydebug
             );
+        // status
+        sprintf(status_brief, "%-20.3f\n%d  (%d con)\n%.3f\n%.0f",
+                d->time,
+                d->nefc,
+                d->ncon,
+                d->timer[mjTIMER_STEP].duration / mjMAX(1, d->timer[mjTIMER_STEP].number),
+                1.0/(glfwGetTime()-lastrendertm)
+            );
     //}
 
     // FPS timing satistics
@@ -1376,10 +1327,7 @@ void render(GLFWwindow* window)
 
     // update scene
     mjv_updateScene(m, d, &vopt, &pert, &cam, mjCAT_ALL, &scn);
-
     mjr_render(rect, &scn, &con);
-
-
 
     // show depth map
     if( showdepth )
@@ -1421,11 +1369,18 @@ void render(GLFWwindow* window)
         mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, smallrect, help_title, help_content, &con);
 
     // show info
-    if( showinfo )
+    if( showinfo ==2 )
     {
             mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, smallrect,
                 "Time\nSize\nCPU\nFPS\nEnergy\nSolver\nFwdInv\nCamera\nFrame\nLabel\nReset\nDebug", status, &con);
     }
+    else if(showinfo ==1)
+    {
+
+      mjr_overlay(mjFONT_NORMAL, mjGRID_BOTTOMLEFT, smallrect,
+          "Time\nSize\nCPU\nFPS", status_brief, &con);
+    }
+
 
 
     mjrRect bottomcenter = {

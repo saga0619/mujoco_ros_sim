@@ -10,10 +10,10 @@
 #include <glfw3.h>
 #include <string.h>
 
-#include <mujoco_ros_msgs/JointState.h>
 #include <mujoco_ros_msgs/SensorState.h>
-#include <mujoco_ros_msgs/JointSet.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Float32.h>
+#include <sensor_msgs/JointState.h>
 
 //-------------------------------- global variables -------------------------------------
 
@@ -27,7 +27,6 @@ char lastfile[1000] = "";
 // user state
 bool paused = true;
 bool showoption = false;
-bool showinfo = true;
 bool showfullscreen = false;
 bool slowmotion = false;
 bool showdepth = false;
@@ -36,6 +35,7 @@ bool showprofiler = true;
 bool showdebug = false;
 bool showfixcam = false;
 int showhelp = 1;                   // 0: none; 1: brief; 2: full
+int showinfo = 1;                   // 0: none; 1: bried; 2: full
 int fontscale = mjFONTSCALE_150;    // can be 100, 150, 200
 int keyreset = 0;                  // non-negative: reset to keyframe
 
@@ -50,6 +50,7 @@ mjvFigure figtimer;
 mjvFigure figsize;
 mjvFigure figsensor;
 char status[1000] = "";
+char status_brief[1000] = "";
 
 // OpenGL rendering
 int refreshrate;
@@ -157,11 +158,13 @@ ros::Subscriber joint_set;
 ros::Subscriber joint_init;
 ros::Subscriber sim_command_sub;
 ros::Publisher sim_command_pub;
-mujoco_ros_msgs::JointState joint_state_msg_;
-mujoco_ros_msgs::JointSet joint_set_msg_;
+//mujoco_ros_msgs::JointState joint_state_msg_;
+//mujoco_ros_msgs::JointSet joint_set_msg_;
 mujoco_ros_msgs::SensorState sensor_state_msg_;
-
-
+sensor_msgs::JointState joint_state_msg_;
+sensor_msgs::JointState joint_set_msg_;
+std_msgs::Float32 sim_time;
+ros::Publisher sim_time_pub;
 
 bool ros_time_sync_reset;
 
@@ -284,9 +287,7 @@ void state_publisher_init(const mjModel* m, mjData* d);
 
 void sensor_callback(const mjModel* m, mjData* d, int num);
 
-void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr& msg);
-
-void jointinit_callback(const mujoco_ros_msgs::JointStateConstPtr& msg);
+void jointset_callback(const sensor_msgs::JointStateConstPtr &msg);
 
 void sim_command_callback(const std_msgs::StringConstPtr& msg);
 
