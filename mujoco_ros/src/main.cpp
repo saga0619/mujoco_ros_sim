@@ -17,6 +17,22 @@ int main(int argc, char** argv)
     std::string key_file;
     nh.param<std::string>("license", key_file, "mjkey.txt");
 
+
+
+
+
+    //register publisher & subscriber
+    joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
+    sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time",1);
+    sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states",1);
+    joint_set = nh.subscribe<sensor_msgs::JointState>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
+    sim_command_sub = nh.subscribe("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
+    sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con",1);
+
+
+
+
+
     // print version, check compatibility
     printf("MuJoCo Pro library version %.2lf\n", 0.01*mj_version());
     if( mjVERSION_HEADER!=mj_version() )
@@ -107,20 +123,6 @@ int main(int argc, char** argv)
 
     //register callback function//
     mjcb_control=mycontroller;
-    mjcb_sensor=sensor_callback;
-
-
-
-
-    //register publisher & subscriber
-    joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
-    sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time",1);
-    sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states",1);
-    joint_set = nh.subscribe<sensor_msgs::JointState>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
-    sim_command_sub = nh.subscribe("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
-    sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con",1);
-
-
 
     // main loop
     while(( !glfwWindowShouldClose(window) )&&ros::ok() )

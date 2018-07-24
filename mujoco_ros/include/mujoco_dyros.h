@@ -171,7 +171,8 @@ bool ros_time_sync_reset;
 //reset start time
 bool ros_sim_started = true;
 
-
+bool controller_reset_check = true;
+bool controller_init_check = true;
 
 
 ros::Time ros_sim_starttm;
@@ -284,8 +285,6 @@ void mycontrollerinit();
 void state_publisher(const mjModel* m, mjData* d);
 
 void state_publisher_init(const mjModel* m, mjData* d);
-
-void sensor_callback(const mjModel* m, mjData* d, int num);
 
 void jointset_callback(const sensor_msgs::JointStateConstPtr &msg);
 
