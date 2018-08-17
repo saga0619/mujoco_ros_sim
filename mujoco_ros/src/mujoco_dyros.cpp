@@ -59,11 +59,11 @@ void mujoco_ros_connector_init(const mjModel* m, mjData* d){
 void state_publisher_init(const mjModel* m, mjData* d){
 
   joint_set_msg_.position.resize(m->nu);
-  joint_set_msg_.effort.resize(m->nu);
+  joint_set_msg_.torque.resize(m->nu);
+
+  command.resize(m->nu);
 
   for(int i=0;i<m->nu;i++){
-
-    joint_set_msg_.effort[i] = 0.0;
     torque_mj[i] =0.0;
   }
 
@@ -164,13 +164,7 @@ void mycontroller(const mjModel* m, mjData* d)
 
 
   for(int i=0;i<m->nu;i++){
-    torque_mj[i]=joint_set_msg_.effort[i];
-
-    //torque_mj[i] = std::max(torque_mj[i],m->actuator_forcerange[2*i]);
-    //torque_mj[i] = std::min(torque_mj[i],m->actuator_forcerange[2*i+1]);
-
-
-
+    torque_mj[i]=command[i];
   }
   mju_copy(d->ctrl,torque_mj, m->nu);
 
@@ -185,18 +179,30 @@ void mycontroller(const mjModel* m, mjData* d)
 
 //---------------------callback functions --------------------------------
 
-void jointset_callback(const sensor_msgs::JointStateConstPtr& msg)
+void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr& msg)
 {
-
-  if(joint_set_msg_.effort.size()==m->nu){
-
-    for(int i=0;i<m->nu;i++){
-      joint_set_msg_.effort[i]= msg->effort[i];
+  //MODE 0 position
+  //MODE 1 torque
+  if(msg->MODE == 1){
+    if(joint_set_msg_.torque.size()==m->nu){
+      for(int i=0;i<m->nu;i++)command[i]=msg->torque[i];
+    }
+    else{
+      ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
     }
   }
-  else{
-    ROS_ERROR(" Actuator Size Not match ");
+  else if(msg->MODE == 0){
+    if(joint_set_msg_.torque.size()==m->nu){
+      for(int i=0;i<m->nu;i++)command[i]=msg->position[i];
+    }
+    else{
+      ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
+    }
   }
+
+
+
+
 }
 
 void sim_command_callback(const std_msgs::StringConstPtr &msg){
@@ -600,9 +606,7 @@ void render(GLFWwindow* window)
         rf_rate.push_back(1.0/(glfwGetTime()-lastrendertm));
 
         current_refresh_rate=0.0;
-
         for(int i=0;i<10;i++)current_refresh_rate+=rf_rate[i];
-
         current_refresh_rate=current_refresh_rate/10;
         if(current_refresh_rate > 200){
           ROS_WARN("%6.2f FPS limit broken !!!! ", current_refresh_rate);

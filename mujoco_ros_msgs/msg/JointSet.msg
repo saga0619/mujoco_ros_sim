@@ -2,7 +2,7 @@ Header header
 float64 time
 
 
-int32 MODE=1
+int32 MODE
 float64[] position
 float64[] torque
 

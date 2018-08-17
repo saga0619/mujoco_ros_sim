@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
     sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time",1);
     sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states",1);
-    joint_set = nh.subscribe<sensor_msgs::JointState>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
+    joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
     //joint_set_mujoco = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set_mujoco",1,joint)
     sim_command_sub = nh.subscribe<std_msgs::String>("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con",1);

@@ -166,9 +166,12 @@ ros::Publisher sim_command_pub;
 //mujoco_ros_msgs::JointSet joint_set_msg_;
 mujoco_ros_msgs::SensorState sensor_state_msg_;
 sensor_msgs::JointState joint_state_msg_;
-sensor_msgs::JointState joint_set_msg_;
+//sensor_msgs::JointState joint_set_msg_;
+mujoco_ros_msgs::JointSet joint_set_msg_;
 std_msgs::Float32 sim_time;
 ros::Publisher sim_time_pub;
+
+std::vector<double> command;
 
 bool ros_time_sync_reset;
 
@@ -290,7 +293,7 @@ void state_publisher(const mjModel* m, mjData* d);
 
 void state_publisher_init(const mjModel* m, mjData* d);
 
-void jointset_callback(const sensor_msgs::JointStateConstPtr &msg);
+void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg);
 
 void sim_command_callback(const std_msgs::StringConstPtr& msg);
 
