@@ -9,11 +9,14 @@
 #include <stdio.h>
 #include <glfw3.h>
 #include <string.h>
+#include <vector>
 
 #include <mujoco_ros_msgs/SensorState.h>
+#include <mujoco_ros_msgs/JointSet.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/JointState.h>
+#include <tf/transform_datatypes.h>
 
 //-------------------------------- global variables -------------------------------------
 
@@ -53,6 +56,7 @@ char status[1000] = "";
 char status_brief[1000] = "";
 
 // OpenGL rendering
+float current_refresh_rate;
 int refreshrate;
 mjrContext con;
 float depth_buffer[5120*2880];        // big enough for 5K screen

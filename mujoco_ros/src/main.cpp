@@ -1,12 +1,6 @@
 #include "mujoco_dyros.h"
 
 
-
-
-
-
-
-
 //-------------------------------- main function ----------------------------------------
 
 int main(int argc, char** argv)
@@ -17,21 +11,14 @@ int main(int argc, char** argv)
     std::string key_file;
     nh.param<std::string>("license", key_file, "mjkey.txt");
 
-
-
-
-
     //register publisher & subscriber
     joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
     sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time",1);
     sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states",1);
     joint_set = nh.subscribe<sensor_msgs::JointState>("/mujoco_ros_interface/joint_set",1,jointset_callback,ros::TransportHints().tcpNoDelay(true));
-    sim_command_sub = nh.subscribe("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
+    //joint_set_mujoco = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set_mujoco",1,joint)
+    sim_command_sub = nh.subscribe<std_msgs::String>("/mujoco_ros_interface/sim_command_con2sim",100,sim_command_callback);
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con",1);
-
-
-
-
 
     // print version, check compatibility
     printf("MuJoCo Pro library version %.2lf\n", 0.01*mj_version());
@@ -66,13 +53,7 @@ int main(int argc, char** argv)
         glfwTerminate();
         return 1;
     }
-    /*
-    if( !window2 )
-    {
-      glfwTerminate();
-      return 1;
-    }
-*/
+
     // make context current, disable v-sync
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0);
@@ -92,15 +73,6 @@ int main(int argc, char** argv)
     profilerinit();
     sensorinit();
 
-    // Second display for fixed cam, but not working. why?//
-    /*
-    glfwMakeContextCurrent(window2);
-    mjv_makeScene(&scn2, 1000);
-    mjv_defaultCamera(&cam2);
-    mjr_defaultContext(&con2);
-    mjr_makeContext(m,&con2,fontscale);
-    */
-
     glfwMakeContextCurrent(window);
     // set GLFW callbacks
     glfwSetKeyCallback(window, keyboard);
@@ -109,8 +81,6 @@ int main(int argc, char** argv)
     glfwSetScrollCallback(window, scroll);
     glfwSetDropCallback(window, drop);
     glfwSetWindowRefreshCallback(window, render);
-
-
 
     // set MuJoCo time callback for profiling
     mjcb_time = timer;

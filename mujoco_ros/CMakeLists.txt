@@ -110,7 +110,7 @@ DEPENDS   mujoco_ros_msgs
 #  DEPENDS system_lib
 )
 
-set(MUJOCO_PATH ${CMAKE_SOURCE_DIR}/mujoco_ros/mjpro150)
+set(MUJOCO_PATH ${CMAKE_SOURCE_DIR}/mujoco_ros_sim/mjpro150)
 
 ###########
 ## Build ##

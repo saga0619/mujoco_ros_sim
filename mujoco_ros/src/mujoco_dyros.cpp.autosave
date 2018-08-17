@@ -600,9 +600,7 @@ void render(GLFWwindow* window)
         rf_rate.push_back(1.0/(glfwGetTime()-lastrendertm));
 
         current_refresh_rate=0.0;
-
         for(int i=0;i<10;i++)current_refresh_rate+=rf_rate[i];
-
         current_refresh_rate=current_refresh_rate/10;
         if(current_refresh_rate > 200){
           ROS_WARN("%6.2f FPS limit broken !!!! ", current_refresh_rate);
