@@ -4,7 +4,7 @@
 
 mujoco with ros connection 
 
-
+made with mujoco ver. 150. 
 
 position/torque command available
 
