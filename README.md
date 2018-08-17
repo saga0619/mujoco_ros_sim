@@ -12,4 +12,8 @@ position/torque command available
 
 how to start : 
 
-dyros_red launch file is required. 
+you can test mujoco_ros_sim with dyros_red. 
+
+you can see detailed instruction at,  
+
+https://github.com/saga702/dyros_red
