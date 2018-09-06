@@ -73,7 +73,7 @@ void state_publisher_init(const mjModel* m, mjData* d){
   joint_state_msg_.effort.resize(m->nv);
   for(int i=0;i<6;i++)joint_state_msg_.effort[i]=0.0;
 
-  sensor_state_msg_.sensor.resize(m->nsensor);
+  sensor_state_msg_.sensor.resize(m->nsensor+1);
 
   //
   for(int i=0;i<m->nu;i++){
@@ -95,6 +95,10 @@ void state_publisher_init(const mjModel* m, mjData* d){
     sensor_state_msg_.sensor[i].name=buffer;
     sensor_state_msg_.sensor[i].data.resize(m->sensor_dim[i]);
   }
+
+  sensor_state_msg_.sensor[m->nsensor].name = "user information";
+
+  sensor_state_msg_.sensor[m->nsensor].data.resize(2);
 
 
   std::cout<< "force range " <<std::endl;
@@ -138,6 +142,10 @@ void state_publisher(const mjModel* m, mjData* d){
       sensor_state_msg_.sensor[i].data[n]=d->sensordata[m->sensor_adr[i]+n];
     }
   }
+  sensor_state_msg_.sensor[m->nsensor].data[0] = dif_time;
+  sensor_state_msg_.sensor[m->nsensor].data[1] = com_time;
+
+
   sensor_state_msg_.header.stamp= ros::Time::now();
   sensor_state_pub.publish(sensor_state_msg_);
   joint_state_pub.publish(joint_state_msg_);
@@ -170,7 +178,8 @@ void mycontroller(const mjModel* m, mjData* d)
 
 
 
-  ROS_INFO_COND(showdebug, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
+
+  ROS_INFO_COND(showdebug==1, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
 }
 
 
@@ -181,23 +190,42 @@ void mycontroller(const mjModel* m, mjData* d)
 
 void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr& msg)
 {
-  //MODE 0 position
-  //MODE 1 torque
-  if(msg->MODE == 1){
-    if(joint_set_msg_.torque.size()==m->nu){
-      for(int i=0;i<m->nu;i++)command[i]=msg->torque[i];
-    }
-    else{
-      ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
-    }
+
+  com_time = ros::Time::now().toSec() - msg->header.stamp.toSec();
+  dif_time = d->time - msg->time;
+
+    ROS_INFO_COND(showdebug==2, "TIME INFORMATION :::: state time : %10.5f , command time : %10.5f, time dif : %10.5f , com time : %10.5f ", msg->time, d->time, dif_time, com_time);
+
+
+  if((msg->time) >(d->time))
+  {
+    ROS_ERROR("JOINT SET COMMAND IS IN FUTURE : current sim time : %10.5f command time : %10.5f",d->time,msg->time);
   }
-  else if(msg->MODE == 0){
-    if(joint_set_msg_.torque.size()==m->nu){
-      for(int i=0;i<m->nu;i++)command[i]=msg->position[i];
+  else if((msg->time +0.01)<(d->time))
+  {
+    ROS_ERROR("Sim time and Command time error exceeds 0.01 sim time : %10.5f command time : %10.5f", d->time, msg->time);
+
+  }
+  else {
+    //MODE 0 position
+    //MODE 1 torque
+    if(msg->MODE == 1){
+      if(joint_set_msg_.torque.size()==m->nu){
+        for(int i=0;i<m->nu;i++)command[i]=msg->torque[i];
+      }
+      else{
+        ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
+      }
     }
-    else{
-      ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
+    else if(msg->MODE == 0){
+      if(joint_set_msg_.torque.size()==m->nu){
+        for(int i=0;i<m->nu;i++)command[i]=msg->position[i];
+      }
+      else{
+        ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
+      }
     }
+
   }
 
 
@@ -321,6 +349,14 @@ void loadmodel(GLFWwindow* window, const char* filename)
     std::cout<<"number of actuators/controls nu = "<<m->nu<<std::endl;
     std::cout<<"number of joints njnt = "<< m->njnt<<std::endl;
     std::cout<<"number of keyframe = "<< m->nkey<<std::endl;
+    std::cout<<"BODY NAMES"<<std::endl;
+    for(int i=0;i<m->nbody;i++){
+      std::string buffer(m->names + m->name_bodyadr[i]);
+      std::cout<<"id : "<<i<<" name : "<<buffer<<std::endl;
+
+    }
+
+
     std::cout<<"ACTUATOR NAMES"<<std::endl;
     for(int i=0;i<m->nu;i++){
       std::string buffer(m->names + m->name_actuatoradr[i]);
@@ -442,6 +478,23 @@ void simulation(void)
         else if(r_fd<0)r_fd=0;
 
         ros::Rate r(60 + 8);
+        if(pert.select>0){
+          std::string buffer(m->names + m->name_bodyadr[pert.select]);
+          //mjtNum res[3];
+          //mju_rotVecMat(res,pert.localpos,d->xmat[pert.select*9]);
+
+          Eigen::Vector3d euler;
+          tf::Quaternion q_(d->xquat[pert.select*4+1],d->xquat[pert.select*4+2],d->xquat[pert.select*4+3],d->xquat[pert.select*4]);
+          tf::Matrix3x3 m_(q_);
+          m_.getRPY(euler(0),euler(1),euler(2));
+
+          double radd = 180.0 /3.141592;
+
+          ROS_INFO("pert.select : %d, name : %s body pos : %f, %f, %f, point pos : %f , %f, %f",pert.select,buffer.c_str(),d->xpos[pert.select*3],d->xpos[pert.select*3+1],d->xpos[pert.select*3+2],pert.localpos[0]+d->xpos[pert.select*3], pert.localpos[1]+d->xpos[pert.select*3+1],pert.localpos[2]+d->xpos[pert.select*3+2]);
+          std::cout<<"Euler Roll : " <<radd*euler(0)<<"  Pitch : "<<radd*euler(1)<< "  Yaw : "<<radd*euler(2)<<std::endl;
+        }
+
+
         while(( d->time-startsimtm)*factor<1.0/refreshrate )
         {
 
@@ -449,6 +502,7 @@ void simulation(void)
             mju_zero(d->xfrc_applied, 6*m->nbody);
             if( pert.select>0 )
             {
+
                 mjv_applyPerturbPose(m, d, &pert, 0);  // move mocap bodies only
                 mjv_applyPerturbForce(m, d, &pert);
             }
@@ -471,7 +525,7 @@ void simulation(void)
                 ros::Duration(timddif).sleep();
                 timesync_count++;
                 timesync_mean=(timesync_mean*timesync_count+timddif)/(timesync_count+1);
-                ROS_INFO_COND(showdebug,"TIMESYNC ACTIVE :: %8.5f ms  MEAN : %8.5f ms", timddif*1000, timesync_mean*1000);
+                ROS_INFO_COND(showdebug==1,"TIMESYNC ACTIVE :: %8.5f ms  MEAN : %8.5f ms", timddif*1000, timesync_mean*1000);
 
               }
             }
@@ -497,7 +551,7 @@ void render_depth(GLFWwindow* main_window, GLFWwindow* sub_window){
   mjrRect rect={0,0,0,0};
   glfwGetFramebufferSize(sub_window, &rect.width, &rect.height);
 
-  ROS_INFO_COND(showdebug,"SHOWFIXCAM");
+  ROS_INFO_COND(showdebug==1,"SHOWFIXCAM");
   cam2.fixedcamid=0;
   cam2.type = mjCAMERA_FIXED;
 
@@ -1151,7 +1205,8 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         break;
 
     case GLFW_KEY_F9:                   // profiler
-      showdebug = !showdebug;
+      showdebug ++;
+      if(showdebug > 2)showdebug = 0;
       break;
 
     case GLFW_KEY_F10:                   // showfixcam
@@ -1162,22 +1217,22 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         slowmotion = !slowmotion;
 
         if(!slowmotion){
-          ROS_INFO_COND(showdebug," ---- SLOW MOTION DISABLED ----");
+          ROS_INFO_COND(showdebug==1," ---- SLOW MOTION DISABLED ----");
           ros_sim_starttm = ros::Time::now() - ros::Duration(d->time);
         }
         else
-          ROS_INFO_COND(showdebug," ---- SLOW MOTION ENABLED ----");
+          ROS_INFO_COND(showdebug==1," ---- SLOW MOTION ENABLED ----");
         break;
 
     case GLFW_KEY_SPACE:                // pause
         paused = !paused;
         if(paused){
           ros_time_paused_starttm = ros::Time::now();
-          ROS_INFO_COND(showdebug," ---- SIMULATION PAUSED ----");
+          ROS_INFO_COND(showdebug==1," ---- SIMULATION PAUSED ----");
         }
         else{
           ros_time_paused_stoptm = ros::Time::now();
-          ROS_INFO_COND(showdebug," ---- SIMULATION RESTARTED ----");
+          ROS_INFO_COND(showdebug==1," ---- SIMULATION RESTARTED ----");
           if(!slowmotion)
             ros_sim_starttm=ros_sim_starttm + (ros_time_paused_stoptm - ros_time_paused_starttm);
         }

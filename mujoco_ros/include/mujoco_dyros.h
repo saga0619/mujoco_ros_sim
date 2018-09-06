@@ -35,12 +35,19 @@ bool slowmotion = false;
 bool showdepth = false;
 bool showsensor = false;
 bool showprofiler = true;
-bool showdebug = false;
+int showdebug = 0;
 bool showfixcam = false;
 int showhelp = 1;                   // 0: none; 1: brief; 2: full
 int showinfo = 1;                   // 0: none; 1: bried; 2: full
 int fontscale = mjFONTSCALE_150;    // can be 100, 150, 200
 int keyreset = 0;                  // non-negative: reset to keyframe
+
+
+// user state for pub
+
+float com_time;
+float dif_time;
+
 
 // abstract visualization
 mjvScene scn;
