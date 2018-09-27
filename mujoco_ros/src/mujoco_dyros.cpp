@@ -63,8 +63,10 @@ void state_publisher_init(const mjModel* m, mjData* d){
 
   command.resize(m->nu);
 
+
   for(int i=0;i<m->nu;i++){
     torque_mj[i] =0.0;
+    command[i]=0.0;
   }
 
   joint_state_msg_.name.resize(m->nv);
@@ -119,7 +121,7 @@ void state_publisher(const mjModel* m, mjData* d){
   for(int i=0;i<m->nu;i++){
     joint_state_msg_.position[i+6]=d->qpos[i+7];
     joint_state_msg_.velocity[i+6]=d->qvel[i+6];
-    joint_state_msg_.effort[i+6]=d->actuator_force[i];
+    joint_state_msg_.effort[i+6]=command[i];
   }
 
  Eigen::Vector3d euler;
@@ -180,6 +182,17 @@ void mycontroller(const mjModel* m, mjData* d)
 
 
   ROS_INFO_COND(showdebug==1, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f" , d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
+  ROS_INFO_COND(showdebug==1, "TEST FOR THERE " );
+
+  if(showdebug==1){
+      std::cout<<"command torque " <<std::endl;
+    for(int i=0;i<m->nu;i++){
+
+      std::cout<<command[i]<<std::endl;
+    }
+
+
+  }
 }
 
 
