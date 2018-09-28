@@ -259,6 +259,19 @@ void sim_command_callback(const std_msgs::StringConstPtr &msg){
     controller_init_check = false;
     std::cout<<"INIT CHECK COMPLETE "<< std::endl;
   }
+  else if(msg->data == "pause"){
+    c_pause();
+    std::cout<<"SIM PAUSED by msg"<<std::endl;
+  }
+  else if(msg->data == "mjreset"){
+    c_reset();
+    std::cout<<"SIM RESET by msg"<<std::endl;
+
+  }
+  else if(msg->data == "mjslowmotion"){
+    c_slowmotion();
+    std::cout<<"SIM slowmotion by msg"<<std::endl;
+  }
 }
 
 
@@ -464,6 +477,7 @@ void simulation(void)
 
         while((ros::Time::now()-ref_time).toSec()<1.0/(refreshrate+2)){
 
+          ros::spinOnce();
           // apply pose perturbations, run mj_forward
           if( pert.active )
           {
@@ -1155,7 +1169,51 @@ void sensorshow(mjrRect rect)
     mjr_figure(viewport, &figsensor, &con);
 }
 
+void c_pause()
+{
+  paused = !paused;
+  if(paused){
+    ros_time_paused_starttm = ros::Time::now();
+    ROS_INFO_COND(showdebug==1," ---- SIMULATION PAUSED ----");
+  }
+  else{
+    ros_time_paused_stoptm = ros::Time::now();
+    ROS_INFO_COND(showdebug==1," ---- SIMULATION RESTARTED ----");
+    if(!slowmotion)
+      ros_sim_starttm=ros_sim_starttm + (ros_time_paused_stoptm - ros_time_paused_starttm);
+  }
+}
 
+void c_slowmotion()
+{
+  slowmotion = !slowmotion;
+
+  if(!slowmotion){
+    ROS_INFO_COND(showdebug==1," ---- SLOW MOTION DISABLED ----");
+    ros_sim_starttm = ros::Time::now() - ros::Duration(d->time);
+  }
+  else
+    ROS_INFO_COND(showdebug==1," ---- SLOW MOTION ENABLED ----");
+}
+
+void c_reset()
+{
+  mj_resetData(m, d);
+  if( keyreset>=0 && keyreset<m->nkey )
+  {
+    d->time = m->key_time[keyreset];
+    mju_copy(d->qpos, m->key_qpos+keyreset*m->nq, m->nq);
+    mju_copy(d->qvel, m->key_qvel+keyreset*m->nv, m->nv);
+    mju_copy(d->act, m->key_act+keyreset*m->na, m->na);
+  }
+  ros_sim_started=true;
+  controller_reset_check=true;
+  controller_init_check = true;
+  mj_forward(m, d);
+  profilerupdate();
+  sensorupdate();
+  mujoco_ros_connector_init(m,d);
+}
 
 
 //--------------------------------- GLFW callbacks --------------------------------------
@@ -1227,28 +1285,11 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
       break;
 
     case GLFW_KEY_ENTER:                // slow motion
-        slowmotion = !slowmotion;
-
-        if(!slowmotion){
-          ROS_INFO_COND(showdebug==1," ---- SLOW MOTION DISABLED ----");
-          ros_sim_starttm = ros::Time::now() - ros::Duration(d->time);
-        }
-        else
-          ROS_INFO_COND(showdebug==1," ---- SLOW MOTION ENABLED ----");
+        c_slowmotion();
         break;
 
     case GLFW_KEY_SPACE:                // pause
-        paused = !paused;
-        if(paused){
-          ros_time_paused_starttm = ros::Time::now();
-          ROS_INFO_COND(showdebug==1," ---- SIMULATION PAUSED ----");
-        }
-        else{
-          ros_time_paused_stoptm = ros::Time::now();
-          ROS_INFO_COND(showdebug==1," ---- SIMULATION RESTARTED ----");
-          if(!slowmotion)
-            ros_sim_starttm=ros_sim_starttm + (ros_time_paused_stoptm - ros_time_paused_starttm);
-        }
+        c_pause();
         break;
 
     case GLFW_KEY_PAGE_UP:              // previous keyreset
@@ -1261,22 +1302,9 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
         // continue with reset
 
     case GLFW_KEY_BACKSPACE:            // reset
-        mj_resetData(m, d);
-        if( keyreset>=0 && keyreset<m->nkey )
-        {
-            d->time = m->key_time[keyreset];
-            mju_copy(d->qpos, m->key_qpos+keyreset*m->nq, m->nq);
-            mju_copy(d->qvel, m->key_qvel+keyreset*m->nv, m->nv);
-            mju_copy(d->act, m->key_act+keyreset*m->na, m->na);
-        }
-        ros_sim_started=true;
-        controller_reset_check=true;
-        controller_init_check = true;
-        mj_forward(m, d);
+
         ROS_INFO("RESET BY BACKSPACE");
-        profilerupdate();
-        sensorupdate();
-        mujoco_ros_connector_init(m,d);
+        c_reset();
         break;
 
     case GLFW_KEY_RIGHT:                // step forward

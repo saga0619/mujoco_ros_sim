@@ -201,8 +201,9 @@ ros::Time ros_time_sm_stoptm;
 
 
 void mujoco_ros_connector_init();
-
-
+void c_pause();
+void c_slowmotion();
+void c_reset();
 
 
 
