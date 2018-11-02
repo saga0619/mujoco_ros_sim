@@ -69,10 +69,10 @@ void state_publisher_init(const mjModel* m, mjData* d){
     command[i]=0.0;
   }
 
-  joint_state_msg_.name.resize(m->nv);
-  joint_state_msg_.position.resize(m->nv);
-  joint_state_msg_.velocity.resize(m->nv);
-  joint_state_msg_.effort.resize(m->nv);
+  joint_state_msg_.name.resize(m->nu+6);
+  joint_state_msg_.position.resize(m->nu+7);
+  joint_state_msg_.velocity.resize(m->nu+6);
+  joint_state_msg_.effort.resize(m->nu+6);
   for(int i=0;i<6;i++)joint_state_msg_.effort[i]=0.0;
 
   sensor_state_msg_.sensor.resize(m->nsensor+1);
@@ -124,18 +124,14 @@ void state_publisher(const mjModel* m, mjData* d){
     joint_state_msg_.effort[i+6]=command[i];
   }
 
- Eigen::Vector3d euler;
- tf::Quaternion q_(d->qpos[4],d->qpos[5],d->qpos[6],d->qpos[3]);
- tf::Matrix3x3 m_(q_);
- m_.getRPY(euler(0),euler(1),euler(2));
-
-
   for(int i=0;i<3;i++){
       joint_state_msg_.position[i] = d->qpos[i];
-      joint_state_msg_.position[i+3] = euler[i];
+      joint_state_msg_.position[i+3] = d->qpos[i+4];
       joint_state_msg_.velocity[i] = d->qvel[i];
       joint_state_msg_.velocity[i+3] = d->qvel[i+3];
   }
+
+  joint_state_msg_.position[m->nu+6] = d->qpos[3];
   joint_state_msg_.header.stamp = ros::Time::now();
 
 
