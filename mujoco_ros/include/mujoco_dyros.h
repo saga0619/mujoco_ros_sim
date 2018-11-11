@@ -27,6 +27,7 @@ char lastfile[1000] = "";
 
 
 
+
 // user state
 bool paused = true;
 bool showoption = false;

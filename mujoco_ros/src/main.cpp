@@ -26,6 +26,7 @@ int main(int argc, char** argv)
         mju_error("Headers and library have different versions");
 
 
+
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) != NULL)
         ROS_INFO_COND(false,"Current working dir: %s\n", cwd);
