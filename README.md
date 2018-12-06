@@ -1,8 +1,8 @@
 # mujoco_ros_sim
 
+Simple connect between mujoco with ros. 
 
-
-mujoco with ros connection 
+Mujoco sends joint and sensor data via rostopic, and receives torque or position command data via rostopic.   
 
 made with mujoco ver. 150. 
 
@@ -11,7 +11,7 @@ position/torque command available
 ※ubuntu 18.04 is recommended since graphical issue at 16.04
 
 
-how to start : 
+### how to start ### 
 
 you can test mujoco_ros_sim with dyros_red. 
 
