@@ -8,6 +8,7 @@ made with mujoco ver. 150.
 
 position/torque command available
 
+※ubuntu 18.04 is recommended since graphical issue at 16.04
 
 
 how to start : 
