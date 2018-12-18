@@ -110,7 +110,8 @@ void state_publisher(const mjModel *m, mjData *d)
     {
         joint_state_msg_.position[i + 6] = d->qpos[i + 7];
         joint_state_msg_.velocity[i + 6] = d->qvel[i + 6];
-        joint_state_msg_.effort[i + 6] = command[i];
+        joint_state_msg_.effort[i + 6] = d->qacc[i + 6];
+        //joint_state_msg_.effort[i + 6] = command[i];
     }
 
     for (int i = 0; i < 3; i++)
@@ -119,6 +120,8 @@ void state_publisher(const mjModel *m, mjData *d)
         joint_state_msg_.position[i + 3] = d->qpos[i + 4];
         joint_state_msg_.velocity[i] = d->qvel[i];
         joint_state_msg_.velocity[i + 3] = d->qvel[i + 3];
+        joint_state_msg_.effort[i] = d->qacc[i];
+        joint_state_msg_.effort[i] = d->qacc[i + 3];
     }
 
     joint_state_msg_.position[m->nu + 6] = d->qpos[3];
