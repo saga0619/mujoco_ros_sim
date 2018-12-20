@@ -540,51 +540,6 @@ void simulation(void)
     }
 }
 
-//detpth output for vision simulation, but not working
-void render_depth(GLFWwindow *main_window, GLFWwindow *sub_window)
-{
-
-    mjrRect rect = {0, 0, 0, 0};
-    glfwGetFramebufferSize(sub_window, &rect.width, &rect.height);
-
-    ROS_INFO_COND(showdebug == 1, "SHOWFIXCAM");
-    cam2.fixedcamid = 0;
-    cam2.type = mjCAMERA_FIXED;
-
-    mjv_updateScene(m, d, &vopt, NULL, &cam2, mjCAT_ALL, &scn2);
-
-    // render
-    mjr_render(rect, &scn2, &con2);
-
-    /*static double lastrendertm = 0;
-  mjrRect rect_sub={0,0,0,0};
-
-  // get the depth buffer
-  mjr_readPixels(NULL, depth_buffer, rect, &con);
-
-  // convert to RGB, subsample by 4
-  for( int r=0; r<rect.height; r+=4 )
-      for( int c=0; c<rect.width; c+=4 )      {
-          // get subsampled address
-          int adr = (r/4)*(rect.width/4) + c/4;
-          // assign rgb
-          depth_rgb[3*adr] = depth_rgb[3*adr+1] = depth_rgb[3*adr+2] =
-              (unsigned char)((1.0f-depth_buffer[r*rect.width+c])*255.0f);
-      }
-
-  // show in bottom-right corner, offset for profiler and sensor
-  mjrRect bottomright = {
-      rect.left+rect.width/4,
-      rect.bottom+rect.height/4,
-      rect.width/4,
-      rect.height/4
-  };
-*/
-    //mjr_drawPixels(depth_rgb, NULL, bottomright, &con);
-    glfwSwapBuffers(sub_window);
-    glfwMakeContextCurrent(main_window);
-}
-
 // render
 void render(GLFWwindow *window)
 {
@@ -1458,12 +1413,15 @@ void mouse_button(GLFWwindow *window, int button, int act, int mods)
 
         // find geom and 3D click point, get corresponding body
         mjtNum selpnt[3];
-        int selgeom = mjv_select(m, d, &vopt,
+        int selgeom, selskin;
+
+        int selbody = mjv_select(m, d, &vopt,
                                  (mjtNum)width / (mjtNum)height,
                                  (mjtNum)lastx / (mjtNum)width,
                                  (mjtNum)(height - lasty) / (mjtNum)height,
-                                 &scn, selpnt);
-        int selbody = (selgeom >= 0 ? m->geom_bodyid[selgeom] : 0);
+                                 &scn, selpnt, &selgeom, &selskin);
+
+        //int selbody = (selgeom >= 0 ? m->geom_bodyid[selgeom] : 0);
 
         // set lookat point, start tracking is requested
         if (selmode == 2 || selmode == 3)
@@ -1488,6 +1446,7 @@ void mouse_button(GLFWwindow *window, int button, int act, int mods)
             {
                 // record selection
                 pert.select = selbody;
+                pert.skinselect = selskin;
 
                 // compute localpos
                 mjtNum tmp[3];
@@ -1495,7 +1454,10 @@ void mouse_button(GLFWwindow *window, int button, int act, int mods)
                 mju_mulMatTVec(pert.localpos, d->xmat + 9 * pert.select, tmp, 3, 3);
             }
             else
+            {
                 pert.select = 0;
+                pert.skinselect = -1;
+            }
         }
 
         // stop perturbation on select
