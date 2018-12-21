@@ -4,7 +4,9 @@ Simple connect between mujoco with ros.
 
 Mujoco sends joint and sensor data via rostopic, and receives torque or position command data via rostopic.   
 
-made with mujoco ver. 150. 
+mujoco engine is based on 2.0
+
+mujoco simulator is based on 1.5
 
 position/torque command available
 
