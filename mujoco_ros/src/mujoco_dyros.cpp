@@ -542,38 +542,6 @@ void simulation(void)
 
 // ui
 
-// set window layout
-void uiLayout(mjuiState *state)
-{
-    mjrRect *rect = state->rect;
-
-    // set number of rectangles
-    state->nrect = 4;
-
-    // rect 0: entire framebuffer
-    rect[0].left = 0;
-    rect[0].bottom = 0;
-    glfwGetFramebufferSize(window, &rect[0].width, &rect[0].height);
-
-    // rect 1: UI 0
-    rect[1].left = 0;
-    rect[1].width = settings.ui0 ? ui0.width : 0;
-    rect[1].bottom = 0;
-    rect[1].height = rect[0].height;
-
-    // rect 2: UI 1
-    rect[2].width = settings.ui1 ? ui1.width : 0;
-    rect[2].left = mjMAX(0, rect[0].width - rect[2].width);
-    rect[2].bottom = 0;
-    rect[2].height = rect[0].height;
-
-    // rect 3: 3D plot (everything else is an overlay)
-    rect[3].left = rect[1].width;
-    rect[3].width = mjMAX(0, rect[0].width - rect[1].width - rect[2].width);
-    rect[3].bottom = 0;
-    rect[3].height = rect[0].height;
-}
-
 // render
 void render(GLFWwindow *window)
 {
