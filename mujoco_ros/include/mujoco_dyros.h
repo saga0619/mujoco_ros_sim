@@ -298,6 +298,9 @@ void makeoptionstring(const char *name, char key, char *buf);
 // advance simulation
 void simulation(void);
 
+// ui
+void uiLayout(mjuistate* state);
+
 // render
 void render(GLFWwindow *window);
 

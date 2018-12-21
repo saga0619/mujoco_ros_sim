@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
     // make context current, disable v-sync
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     // save window-to-framebuffer pixel scaling (needed for OSX scaling)
     int width, width1, height;
