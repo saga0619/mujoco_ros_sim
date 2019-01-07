@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mujoco_ros)
+project(mujoco_2_ros)
 
 add_compile_options(-std=c++11 -ofast)
 
@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 
 catkin_package(
-DEPENDS mujoco_ros_msgs
+DEPENDS   mujoco_ros_msgs
 )
 
 set(MUJOCO_PATH ${CMAKE_SOURCE_DIR}/mujoco_ros_sim/mjpro200)
@@ -29,25 +29,26 @@ link_directories(
   ${MUJOCO_PATH}/bin
 )
 
-
 file(GLOB LIB_MUJOCO ${MUJOCO_PATH}/bin/libmujoco200.so)
 
+file(GLOB UI_SRC "${MUJOCO_PATH}/include/uitools.c")
+
 add_library(mujoco_ros_lib
-    src/mujoco_dyros.cpp
-    ${MUJOCO_PATH}/include/uitools.c
+    ${UI_SRC}
+    src/mjros.cpp
     )
 
 add_executable(mujoco_ros src/main.cpp)
 
 target_link_libraries(mujoco_ros
-    mujoco_ros_lib
+   mujoco_ros_lib
 
    ${catkin_LIBRARIES}
    ${LIB_MUJOCO}
    GL
    #GLU 
    #glut
-
+   
    ${MUJOCO_PATH}/bin/libglew.so
    ${MUJOCO_PATH}/bin/libglfw.so.3
  )

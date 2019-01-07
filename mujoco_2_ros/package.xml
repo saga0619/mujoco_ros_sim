@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mujoco_ros</name>
+  <name>mujoco_2_ros</name>
   <version>0.0.0</version>
-  <description>The dyros_red_mujoco package</description>
+  <description>The dyros_red_mujoco package based on mujoco2.0</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
