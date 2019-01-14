@@ -77,6 +77,7 @@ struct setting_
     int busywait = 0;
     int debug = 0;
     int testbtn2 = 1;
+    int timecheck = 0;
 
     // simulation
     int run = 0;
@@ -149,7 +150,7 @@ const mjuiDef defOption[] =
         {mjITEM_CHECKINT, "Vertical Sync", 1, &settings.vsync, " #295"},
         {mjITEM_CHECKINT, "Busy Wait", 1, &settings.busywait, " #296"},
         {mjITEM_CHECKINT, "Debug", 1, &settings.debug, " #297"},
-        {mjITEM_CHECKINT, "TEST btn2", 1, &settings.testbtn2, " #298"},
+        {mjITEM_CHECKINT, "Time Check", 1, &settings.timecheck, " #298"},
         {mjITEM_END}};
 
 // simulation section of UI

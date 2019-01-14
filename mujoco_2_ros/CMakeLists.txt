@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mujoco_2_ros)
+project(mujoco_ros)
 
 add_compile_options(-std=c++11 -ofast)
 
@@ -53,5 +53,7 @@ target_link_libraries(mujoco_ros
    ${MUJOCO_PATH}/bin/libglfw.so.3
  )
 
+add_dependencies(mujoco_ros_lib ${catkin_EXPORTED_TARGETS})
+add_dependencies(mujoco_ros ${catkin_EXPORTED_TARGETS})
 
 message(STATUS "MuJoCo path: " ${MUJOCO_PATH})
