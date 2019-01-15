@@ -128,6 +128,9 @@ int main(int argc, char **argv)
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con", 1);
 
     ROS_INFO("ROS initialize complete");
+    sim_time_ros = ros::Duration(0);
+    sim_time_run = ros::Time::now();
+    sim_time_now_ros = ros::Duration(0);
 
     // initialize everything
     init(key_file);

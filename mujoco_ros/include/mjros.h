@@ -148,7 +148,7 @@ const mjuiDef defOption[] =
         {mjITEM_CHECKINT, "Fullscreen", 1, &settings.fullscreen, " #294"},
 #endif
         {mjITEM_CHECKINT, "Vertical Sync", 1, &settings.vsync, " #295"},
-        {mjITEM_CHECKINT, "Busy Wait", 1, &settings.busywait, " #296"},
+        {mjITEM_CHECKINT, "Real Time", 1, &settings.busywait, " #296"},
         {mjITEM_CHECKINT, "Debug", 1, &settings.debug, " #297"},
         {mjITEM_CHECKINT, "Time Check", 1, &settings.timecheck, " #298"},
         {mjITEM_END}};
@@ -286,15 +286,15 @@ bool controller_reset_check = true;
 bool controller_init_check = true;
 bool reset_request = false;
 
-ros::Time ros_sim_starttm;
-ros::Duration ros_time_paused;
+bool pause_check = true;
+ros::Duration sim_time_ros;
+ros::Time sim_time_run;
+
+ros::Duration sim_time_now_ros;
 
 ros::Duration ros_sim_runtime;
-ros::Time ros_time_paused_starttm;
-ros::Time ros_time_paused_stoptm;
-ros::Time ros_time_sm_starttm;
-ros::Time ros_time_sm_stoptm;
 ros::Time sync_time_test;
+
 mjtNum *torque_mj;
 
 // user state for pub

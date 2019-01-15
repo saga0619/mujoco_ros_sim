@@ -290,10 +290,9 @@ void mycontroller(const mjModel *m, mjData *d)
             }
 
             static double t_before = ros::Time::now().toSec();
-
             double rt_now = ros::Time::now().toSec();
 
-            if (settings.debug)
+            if (settings.timecheck)
             {
                 std::cout << "rdif : " << (rt_now - t_before) * 1000 << "\t t_now : " << d->time << " \t r_now : " << ros::Time::now().toSec() - sync_time_test.toSec() << " \t t dif : " << ros::Time::now().toSec() - sync_time_test.toSec() - d->time << std::endl;
             }
@@ -643,10 +642,26 @@ void infotext(char *title, char *content, double interval)
     }
     solerr = mju_log10(mju_max(mjMINVAL, solerr));
 
+    // get ROS time
+    if (settings.run)
+    {
+        if (pause_check)
+        {
+            sim_time_ros = ros::Duration(d->time);
+            sim_time_run = ros::Time::now();
+        }
+        pause_check = false;
+        sim_time_now_ros = ros::Time::now() - sim_time_run + sim_time_ros;
+    }
+    else
+    {
+        pause_check = true;
+    }
+
     // prepare info text
     strcpy(title, "Time\nRTime\nt_diff\nSize\nCPU\nSolver   \nFPS\nstack\nconbuf\nefcbuf");
     sprintf(content, "%-20.5f\n%-20.5f\n%-20.5f\n%d  (%d con)\n%.3f\n%.1f  (%d it)\n%.0f\n%.3f\n%.3f\n%.3f",
-            d->time, ros::Time::now().toSec(), ros::Time::now().toSec() - d->time,
+            d->time, sim_time_now_ros.toSec(), sim_time_now_ros.toSec() - d->time,
             d->nefc, d->ncon,
             settings.run ? d->timer[mjTIMER_STEP].duration / mjMAX(1, d->timer[mjTIMER_STEP].number) : d->timer[mjTIMER_FORWARD].duration / mjMAX(1, d->timer[mjTIMER_FORWARD].number),
             solerr, d->solver_iter,
@@ -1245,11 +1260,11 @@ void uiEvent(mjuiState *state)
                 glfwSwapInterval(settings.vsync);
                 break;
 
-            case 12:
-                ROS_INFO("TESTBTN");
+            case 12: //DEBUG mode btn
+                //ROS_INFO("DEBUG mode on ");
                 break;
-            case 13:
-                ROS_INFO("TESTBTN2");
+            case 13: //Time check btn
+                //ROS_INFO("Time check on ");
                 break;
             }
 
@@ -1293,6 +1308,9 @@ void uiEvent(mjuiState *state)
                 settings.key++;
                 if (settings.key > m->nkey - 1)
                     settings.key = 0;
+                char s_key[10];
+                sprintf(s_key, "%d", settings.key);
+                strcpy(ui0.sect[SECT_SIMULATION].item[7].multi.name[0], s_key);
                 c_reset();
                 break;
 
@@ -1300,6 +1318,9 @@ void uiEvent(mjuiState *state)
                 settings.key--;
                 if (settings.key < 0)
                     settings.key = m->nkey - 1;
+                s_key[10];
+                sprintf(s_key, "%d", settings.key);
+                strcpy(ui0.sect[SECT_SIMULATION].item[7].multi.name[0], s_key);
                 c_reset();
                 break;
 
@@ -1818,7 +1839,6 @@ void simulate(void)
                     mjv_applyPerturbForce(m, d, &pert);
 
                     // run single step, let next iteration deal with timing
-                    //ros::spinOnce();
                     mj_step(m, d);
                 }
 
@@ -1836,9 +1856,10 @@ void simulate(void)
 
                         // run mj_step
                         mjtNum prevtm = d->time;
-                        //ros::spinOnce();
                         mj_step(m, d);
-
+                        if (settings.timecheck)
+                        {
+                        }
                         // break on reset
                         if (d->time < prevtm)
                             break;
