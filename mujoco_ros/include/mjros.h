@@ -78,7 +78,7 @@ struct setting_
     int debug = 0;
     int testbtn2 = 1;
     int timecheck = 0;
-
+    int controlui = 0;
     // simulation
     int run = 0;
     int key = 0;
@@ -151,6 +151,7 @@ const mjuiDef defOption[] =
         {mjITEM_CHECKINT, "Real Time", 1, &settings.busywait, " #296"},
         {mjITEM_CHECKINT, "Debug", 1, &settings.debug, " #297"},
         {mjITEM_CHECKINT, "Time Check", 1, &settings.timecheck, " #298"},
+        {mjITEM_CHECKINT, "Control by UI", 1, &settings.controlui, ""},
         {mjITEM_END}};
 
 // simulation section of UI

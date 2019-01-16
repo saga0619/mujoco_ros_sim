@@ -103,8 +103,8 @@ void loadmodel(void)
     // full ui update
     uiModify(window, &ui0, &uistate, &con);
     uiModify(window, &ui1, &uistate, &con);
-    updatesettings();
 
+    updatesettings();
     mujoco_ros_connector_init();
     std::cout << " MODEL LOADED " << std::endl;
 }

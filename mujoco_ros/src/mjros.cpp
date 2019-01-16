@@ -113,10 +113,8 @@ void rosPollEvents()
 
 void state_publisher_init()
 {
-
     joint_set_msg_.position.resize(m->nu);
     joint_set_msg_.torque.resize(m->nu);
-
     command.resize(m->nu);
 
     for (int i = 0; i < m->nu; i++)
@@ -125,41 +123,75 @@ void state_publisher_init()
         command[i] = 0.0;
     }
 
-    joint_state_msg_.name.resize(m->nu + 6);
-    joint_state_msg_.position.resize(m->nu + 7);
-    joint_state_msg_.velocity.resize(m->nu + 6);
-    joint_state_msg_.effort.resize(m->nu + 6);
-    for (int i = 0; i < 6; i++)
-        joint_state_msg_.effort[i] = 0.0;
-
-    sensor_state_msg_.sensor.resize(m->nsensor + 1);
-
-    for (int i = 0; i < m->nu; i++)
+    if (m->jnt_type[0] == 0) //if first joint type is floating.
     {
-        std::string buffer(m->names + m->name_actuatoradr[i]);
-        joint_state_msg_.name[i + 6] = buffer;
+        ROS_INFO("ROBOT is floating !");
+        joint_state_msg_.name.resize(m->nu + 6);
+        joint_state_msg_.position.resize(m->nu + 7);
+        joint_state_msg_.velocity.resize(m->nu + 6);
+        joint_state_msg_.effort.resize(m->nu + 6);
+        for (int i = 0; i < 6; i++)
+            joint_state_msg_.effort[i] = 0.0;
+
+        for (int i = 0; i < m->nu; i++)
+        {
+            std::string buffer(m->names + m->name_actuatoradr[i]);
+            joint_state_msg_.name[i + 6] = buffer;
+        }
+
+        joint_state_msg_.name[0] = "virtual_x";
+        joint_state_msg_.name[1] = "virtual_y";
+        joint_state_msg_.name[2] = "virtual_z";
+        joint_state_msg_.name[3] = "virtual_roll";
+        joint_state_msg_.name[4] = "virtual_pitch";
+        joint_state_msg_.name[5] = "virtual_yaw";
+    }
+    else if ((m->jnt_type[0] == 2) || (m->jnt_type[0] == 3))
+    {
+        ROS_INFO("ROBOT is fixed !");
+
+        for (int i = 0; i < m->njnt; i++)
+        {
+            if ((m->jnt_type[i] != 3) && (m->jnt_type[i] != 2))
+            {
+                ROS_ERROR("The robot contains ball/free type of joint in the middle. \n Current state publisher doesn't support this type of robot. \n Copy following line and contact me for update : june992@snu.ac.kr ");
+                ROS_ERROR("Total number of generalized coordinates(qpos) : %d", m->nq);
+                ROS_ERROR("Total number of degrees of freedom(qvel) : %d", m->nv);
+                ROS_ERROR("Total number of actuator : %d ", m->nu);
+                ROS_ERROR("Total Joint number is : %d ", m->njnt);
+                for (int i = 0; i < m->njnt; i++)
+                {
+                    ROS_ERROR("Joint %d - Type : %d", i, m->jnt_type[i]);
+                }
+            }
+        }
+
+        joint_state_msg_.name.resize(m->njnt);
+        joint_state_msg_.position.resize(m->njnt);
+        joint_state_msg_.velocity.resize(m->njnt);
+        joint_state_msg_.effort.resize(m->njnt);
+
+        for (int i = 0; i < m->njnt; i++)
+        {
+            std::string buffer(m->names + m->name_jntadr[i]);
+            joint_state_msg_.name[i] = buffer;
+        }
     }
 
-    joint_state_msg_.name[0] = "virtual_x";
-    joint_state_msg_.name[1] = "virtual_y";
-    joint_state_msg_.name[2] = "virtual_z";
-    joint_state_msg_.name[3] = "virtual_roll";
-    joint_state_msg_.name[4] = "virtual_pitch";
-    joint_state_msg_.name[5] = "virtual_yaw";
+    //Sensor size setting. sensor size : model sensor size + 1
+    // + 1 additional size is for user information
 
+    sensor_state_msg_.sensor.resize(m->nsensor + 1);
     for (int i = 0; i < m->nsensor; i++)
     {
         std::string buffer(m->names + m->name_sensoradr[i]);
         sensor_state_msg_.sensor[i].name = buffer;
         sensor_state_msg_.sensor[i].data.resize(m->sensor_dim[i]);
     }
-
     sensor_state_msg_.sensor[m->nsensor].name = "user information";
-
     sensor_state_msg_.sensor[m->nsensor].data.resize(2);
 
     std::cout << "force range " << std::endl;
-
     for (int i = 0; i < m->nu; i++)
     {
         std::cout << "actuator : " << i << " f1 :   " << m->actuator_ctrlrange[i * 2] << " f2 : " << m->actuator_ctrlrange[i * 2 + 1] << std::endl;
@@ -168,29 +200,38 @@ void state_publisher_init()
 
 void state_publisher()
 {
-
     sim_time.data = d->time;
 
-    for (int i = 0; i < m->nu; i++)
+    if (m->jnt_type[0] == 0)
     {
-        joint_state_msg_.position[i + 6] = d->qpos[i + 7];
-        joint_state_msg_.velocity[i + 6] = d->qvel[i + 6];
-        joint_state_msg_.effort[i + 6] = d->qacc[i + 6];
-        //joint_state_msg_.effort[i + 6] = command[i];
-    }
 
-    for (int i = 0; i < 3; i++)
+        for (int i = 0; i < m->nu; i++)
+        {
+            joint_state_msg_.position[i + 6] = d->qpos[i + 7];
+            joint_state_msg_.velocity[i + 6] = d->qvel[i + 6];
+            joint_state_msg_.effort[i + 6] = d->qacc[i + 6];
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            joint_state_msg_.position[i] = d->qpos[i];
+            joint_state_msg_.position[i + 3] = d->qpos[i + 4];
+            joint_state_msg_.velocity[i] = d->qvel[i];
+            joint_state_msg_.velocity[i + 3] = d->qvel[i + 3];
+            joint_state_msg_.effort[i] = d->qacc[i];
+            joint_state_msg_.effort[i] = d->qacc[i + 3];
+        }
+        joint_state_msg_.position[m->nu + 6] = d->qpos[3];
+    }
+    else
     {
-        joint_state_msg_.position[i] = d->qpos[i];
-        joint_state_msg_.position[i + 3] = d->qpos[i + 4];
-        joint_state_msg_.velocity[i] = d->qvel[i];
-        joint_state_msg_.velocity[i + 3] = d->qvel[i + 3];
-        joint_state_msg_.effort[i] = d->qacc[i];
-        joint_state_msg_.effort[i] = d->qacc[i + 3];
+        for (int i = 0; i < m->njnt; i++)
+        {
+            joint_state_msg_.position[i] = d->qpos[i];
+            joint_state_msg_.velocity[i] = d->qvel[i];
+            joint_state_msg_.effort[i] = d->qacc[i];
+        }
     }
-
-    joint_state_msg_.position[m->nu + 6] = d->qpos[3];
-    joint_state_msg_.header.stamp = ros::Time::now();
 
     for (int i = 0; i < m->nsensor; i++)
     {
@@ -202,6 +243,7 @@ void state_publisher()
     sensor_state_msg_.sensor[m->nsensor].data[0] = dif_time;
     sensor_state_msg_.sensor[m->nsensor].data[1] = com_time;
 
+    joint_state_msg_.header.stamp = ros::Time::now();
     sensor_state_msg_.header.stamp = ros::Time::now();
     sensor_state_pub.publish(sensor_state_msg_);
     joint_state_pub.publish(joint_state_msg_);
@@ -274,7 +316,10 @@ void mycontroller(const mjModel *m, mjData *d)
             {
                 torque_mj[i] = command[i];
             }
-            mju_copy(d->ctrl, torque_mj, m->nu);
+            if (!settings.controlui)
+            {
+                mju_copy(d->ctrl, torque_mj, m->nu);
+            }
 
             ROS_INFO_COND(settings.debug == 1, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f", d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
             ROS_INFO_COND(settings.debug == 1, "TEST FOR THERE ");
