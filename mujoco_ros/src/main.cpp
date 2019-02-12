@@ -71,10 +71,15 @@ void loadmodel(void)
     mju_copy(d->qvel, m->key_qvel + i * m->nv, m->nv);
     mju_copy(d->act, m->key_act + i * m->na, m->na);
 
+    if (m->actuator_biastype[0])
+    {
+        mju_copy(d->ctrl, m->key_qpos + 7 + i * m->nq, m->nu);
+    }
+
     mj_forward(m, d);
 
     ros_sim_started = true;
-    torque_mj = mj_stackAlloc(d, (int)m->nu);
+    ctrl_command = mj_stackAlloc(d, (int)m->nu);
 
     // re-create scene and context
     mjv_makeScene(m, &scn, maxgeom);

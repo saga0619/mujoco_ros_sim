@@ -10,9 +10,15 @@ void c_reset()
     mju_copy(d->qpos, m->key_qpos + i * m->nq, m->nq);
     mju_copy(d->qvel, m->key_qvel + i * m->nv, m->nv);
     mju_copy(d->act, m->key_act + i * m->na, m->na);
+    if (m->actuator_biastype[0])
+    {
+        mju_copy(d->ctrl, m->key_qpos + 7 + i * m->nq, m->nu);
+    }
+
     ros_sim_started = true;
     controller_reset_check = true;
     controller_init_check = true;
+    cmd_rcv = false;
 
     mujoco_ros_connector_init();
     mj_forward(m, d);
@@ -28,6 +34,7 @@ void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
 
     com_time = ros::Time::now().toSec() - msg->header.stamp.toSec();
     dif_time = d->time - msg->time;
+    cmd_rcv = true;
 
     ROS_INFO_COND(settings.debug, "TIME INFORMATION :::: state time : %10.5f , command time : %10.5f, time dif : %10.5f , com time : %10.5f ", msg->time, d->time, dif_time, com_time);
 
@@ -119,7 +126,7 @@ void state_publisher_init()
 
     for (int i = 0; i < m->nu; i++)
     {
-        torque_mj[i] = 0.0;
+        ctrl_command[i] = 0.0;
         command[i] = 0.0;
     }
 
@@ -273,7 +280,7 @@ void mujoco_ros_connector_init()
         ros::spinOnce();
         poll_r.sleep();
     }
-    if (!((ros::Time::now() - wait_time).toSec() < 5.0))
+    if (!((ros::Time::now() - wait_time).toSec() < 1.0))
     {
 
         ROS_ERROR("NO RESPONSE FROM CONTROLLER ");
@@ -291,7 +298,7 @@ void mujoco_ros_connector_init()
     controller_reset_check = true;
 
     wait_time = ros::Time::now();
-    while ((controller_init_check) && ((ros::Time::now() - wait_time).toSec() < 5.0))
+    while ((controller_init_check) && ((ros::Time::now() - wait_time).toSec() < 1.0))
     {
         ros::spinOnce();
         poll_r.sleep();
@@ -314,11 +321,14 @@ void mycontroller(const mjModel *m, mjData *d)
             state_publisher();
             for (int i = 0; i < m->nu; i++)
             {
-                torque_mj[i] = command[i];
+                ctrl_command[i] = command[i];
             }
             if (!settings.controlui)
             {
-                mju_copy(d->ctrl, torque_mj, m->nu);
+                if (cmd_rcv)
+                {
+                    mju_copy(d->ctrl, ctrl_command, m->nu);
+                }
             }
 
             ROS_INFO_COND(settings.debug == 1, "MJ_TIME:%10.5f ros:%10.5f dif:%10.5f", d->time, ros_sim_runtime.toSec(), d->time - ros_sim_runtime.toSec());
@@ -1830,6 +1840,31 @@ void render(GLFWwindow *window)
     if (settings.sensor)
         sensorshow(smallrect);
 
+    if (settings.run && settings.link_info)
+    {
+        if (pert.select > 0)
+        {
+            Eigen::Vector3d euler;
+            std::string buffer(m->names + m->name_bodyadr[pert.select]);
+
+            tf::Quaternion q_(d->xquat[pert.select * 4 + 1], d->xquat[pert.select * 4 + 2], d->xquat[pert.select * 4 + 3], d->xquat[pert.select * 4]);
+            tf::Matrix3x3 m_(q_);
+            tf::Vector3 global_p_(d->xpos[pert.select * 3], d->xpos[pert.select * 3 + 1], d->xpos[pert.select * 3 + 2]);
+            tf::Vector3 local_p_(pert.localpos[0], pert.localpos[1], pert.localpos[2]);
+
+            tf::Vector3 r_ = global_p_ + m_ * local_p_;
+            m_.getRPY(euler(0), euler(1), euler(2));
+
+            double radd = 180.0 / 3.141592;
+
+            printf("pert.select : %d, name : %s at sim time : %10.5f\n\t body pos : %10.7f, %10.7f, %10.7f, \n\tlocal pos : %10.7f, %10.7f, %10.7f \n\tpoint pos : %10.7f, %10.7f, %10.7f\n\tEuler angle : %9.4f, %9.4f, %9.4f\n",
+                   pert.select, buffer.c_str(), d->time,
+                   global_p_[0], global_p_[1], global_p_[2],
+                   local_p_[0], local_p_[1], local_p_[2],
+                   r_[0], r_[1], r_[2],
+                   radd * euler(0), radd * euler(1), radd * euler(2));
+        }
+    }
     // finalize
     glfwSwapBuffers(window);
 }

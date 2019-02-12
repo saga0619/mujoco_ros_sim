@@ -75,10 +75,13 @@ struct setting_
     int fullscreen = 0;
     int vsync = 1;
     int busywait = 0;
+    int realtime = 0;
     int debug = 0;
     int testbtn2 = 1;
     int timecheck = 0;
     int controlui = 0;
+    int link_info = 0;
+
     // simulation
     int run = 0;
     int key = 0;
@@ -152,6 +155,7 @@ const mjuiDef defOption[] =
         {mjITEM_CHECKINT, "Debug", 1, &settings.debug, " #297"},
         {mjITEM_CHECKINT, "Time Check", 1, &settings.timecheck, " #298"},
         {mjITEM_CHECKINT, "Control by UI", 1, &settings.controlui, ""},
+        {mjITEM_CHECKINT, "Link info", 1, &settings.link_info, ""},
         {mjITEM_END}};
 
 // simulation section of UI
@@ -296,12 +300,17 @@ ros::Duration sim_time_now_ros;
 ros::Duration ros_sim_runtime;
 ros::Time sync_time_test;
 
-mjtNum *torque_mj;
+mjtNum *ctrl_command;
+mjtNum *com_ui;
+
+bool cmd_rcv = false;
 
 // user state for pub
 
 float com_time;
 float dif_time;
+
+double t_bf = 0;
 
 //void c_pause();
 //void c_slowmotion();
