@@ -10,11 +10,15 @@ position/torque command available
 
 ※ubuntu 18.04 is recommended since graphical issue at 16.04
 
+## Installation
 
-### how to start ### 
+clone this git to your_catkin_ws/src, then compile with catkin_make
 
-you can test mujoco_ros_sim with dyros_red. 
+## how to start  
 
-you can see detailed instruction at,  
+you can test mujoco_ros_sim with dyros_red or dyros_jet
 
-https://github.com/saga702/dyros_red
+* [DYROS_RED](https://github.com/saga702/dyros_red)
+* [DYROS_JET](https://github.com/psh117/dyros_jet)
+
+
