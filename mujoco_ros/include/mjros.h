@@ -74,7 +74,7 @@ struct setting_
     int sensor = 0;
     int fullscreen = 0;
     int vsync = 1;
-    int busywait = 0;
+    int busywait = 1;
     int realtime = 0;
     int debug = 0;
     int testbtn2 = 1;
