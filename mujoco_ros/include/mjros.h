@@ -300,6 +300,8 @@ ros::Duration sim_time_now_ros;
 ros::Duration ros_sim_runtime;
 ros::Time sync_time_test;
 
+std::string ctrlstat = "Missing";
+
 mjtNum *ctrl_command;
 mjtNum *com_ui;
 

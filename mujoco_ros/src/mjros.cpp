@@ -4,6 +4,7 @@
 
 void c_reset()
 {
+    ros_sim_started = false;
     mj_resetData(m, d);
     int i = settings.key;
     d->time = m->key_time[i];
@@ -20,8 +21,14 @@ void c_reset()
     controller_init_check = true;
     cmd_rcv = false;
 
+    sim_time_now_ros = ros::Duration(d->time);
+
     mujoco_ros_connector_init();
     mj_forward(m, d);
+
+    sim_time_ros = ros::Duration(d->time);
+    sim_time_run = ros::Time::now();
+
     profilerupdate();
     sensorupdate();
     updatesettings();
@@ -295,19 +302,29 @@ void mujoco_ros_connector_init()
 
     rst_msg_.data = "INIT";
     sim_command_pub.publish(rst_msg_);
-    controller_reset_check = true;
-
     wait_time = ros::Time::now();
     while ((controller_init_check) && ((ros::Time::now() - wait_time).toSec() < 1.0))
     {
         ros::spinOnce();
         poll_r.sleep();
     }
-    controller_init_check = true;
 
     mjcb_control = mycontroller;
     mycontrollerinit();
     std::cout << " MUJOCO_ROS_CONNTECTOR INITIALIZE COMPLETE" << std::endl;
+
+    if ((!controller_init_check) && (!controller_reset_check))
+    {
+        ROS_INFO("CONNECT COMPLETE");
+        ctrlstat = "CONNECTED";
+    }
+    else
+    {
+        ctrlstat = "MISSING";
+    }
+
+    controller_reset_check = true;
+    controller_init_check = true;
 }
 
 void mycontroller(const mjModel *m, mjData *d)
@@ -714,8 +731,8 @@ void infotext(char *title, char *content, double interval)
     }
 
     // prepare info text
-    strcpy(title, "Time\nRTime\nt_diff\nSize\nCPU\nSolver   \nFPS\nstack\nconbuf\nefcbuf");
-    sprintf(content, "%-20.5f\n%-20.5f\n%-20.5f\n%d  (%d con)\n%.3f\n%.1f  (%d it)\n%.0f\n%.3f\n%.3f\n%.3f",
+    strcpy(title, "Time\nRTime\nt_diff\nSize\nCPU\nSolver   \nFPS\nstack\nconbuf\nefcbuf\nController");
+    sprintf(content, "%-20.5f\n%-20.5f\n%-20.5f\n%d  (%d con)\n%.3f\n%.1f  (%d it)\n%.0f\n%.3f\n%.3f\n%.3f\n%s",
             d->time, sim_time_now_ros.toSec(), sim_time_now_ros.toSec() - d->time,
             d->nefc, d->ncon,
             settings.run ? d->timer[mjTIMER_STEP].duration / mjMAX(1, d->timer[mjTIMER_STEP].number) : d->timer[mjTIMER_FORWARD].duration / mjMAX(1, d->timer[mjTIMER_FORWARD].number),
@@ -723,7 +740,8 @@ void infotext(char *title, char *content, double interval)
             1 / interval,
             d->maxuse_stack / (double)d->nstack,
             d->maxuse_con / (double)m->nconmax,
-            d->maxuse_efc / (double)m->njmax);
+            d->maxuse_efc / (double)m->njmax,
+            ctrlstat.c_str());
 
     // add Energy if enabled
     if (mjENABLED(mjENBL_ENERGY))
@@ -1336,12 +1354,8 @@ void uiEvent(mjuiState *state)
             case 1: // Reset
                 if (m)
                 {
+                    settings.key = 0;
                     c_reset();
-                    mj_resetData(m, d);
-                    mj_forward(m, d);
-                    profilerupdate();
-                    sensorupdate();
-                    updatesettings();
                 }
                 break;
 
@@ -1997,7 +2011,6 @@ void init(std::string key_file)
         glfwTerminate();
         mju_error("could not create window");
     }
-
     // save window position and size
     glfwGetWindowPos(window, windowpos, windowpos + 1);
     glfwGetWindowSize(window, windowsize, windowsize + 1);
