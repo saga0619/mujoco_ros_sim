@@ -17,6 +17,7 @@ add_message_files(
   SensorState.msg
   SensorBase.msg
   SimstatusM2C.msg
+  SimStatus.msg
 )
 
 

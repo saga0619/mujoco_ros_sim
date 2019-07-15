@@ -16,13 +16,14 @@
 #include <vector>
 #include <mujoco_ros_msgs/SensorState.h>
 #include <mujoco_ros_msgs/JointSet.h>
+#include <mujoco_ros_msgs/SimStatus.h>
+
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/JointState.h>
 #include <tf/transform_datatypes.h>
 
 //-------------------------------- global -----------------------------------------------
-
 //-----mujoco var-----
 // constants
 const int maxgeom = 5000;         // preallocated geom array in mjvScene
@@ -269,10 +270,12 @@ ros::Subscriber joint_set;
 ros::Subscriber joint_init;
 ros::Subscriber sim_command_sub;
 ros::Publisher sim_command_pub;
+ros::Publisher sim_status_pub;
 
 //mujoco_ros_msgs::JointState joint_state_msg_;
 //mujoco_ros_msgs::JointSet joint_set_msg_;
 mujoco_ros_msgs::SensorState sensor_state_msg_;
+mujoco_ros_msgs::SimStatus sim_status_msg_;
 sensor_msgs::JointState joint_state_msg_;
 //sensor_msgs::JointState joint_set_msg_;
 mujoco_ros_msgs::JointSet joint_set_msg_;
@@ -292,6 +295,8 @@ bool controller_init_check = true;
 bool reset_request = false;
 
 bool pause_check = true;
+
+bool pub_total_mode = false;
 ros::Duration sim_time_ros;
 ros::Time sim_time_run;
 
@@ -307,6 +312,7 @@ mjtNum *com_ui;
 
 bool cmd_rcv = false;
 
+
 // user state for pub
 
 float com_time;
@@ -314,6 +320,7 @@ float dif_time;
 
 double t_bf = 0;
 
+double sim_cons_time = 0;
 //void c_pause();
 //void c_slowmotion();
 void c_reset();

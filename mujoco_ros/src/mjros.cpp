@@ -43,6 +43,8 @@ void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
     dif_time = d->time - msg->time;
     cmd_rcv = true;
 
+    sim_cons_time = dif_time;
+
     ROS_INFO_COND(settings.debug, "TIME INFORMATION :::: state time : %10.5f , command time : %10.5f, time dif : %10.5f , com time : %10.5f ", msg->time, d->time, dif_time, com_time);
 
     if ((msg->time) > (d->time))
@@ -127,6 +129,7 @@ void rosPollEvents()
 
 void state_publisher_init()
 {
+
     joint_set_msg_.position.resize(m->nu);
     joint_set_msg_.torque.resize(m->nu);
     command.resize(m->nu);
@@ -192,6 +195,11 @@ void state_publisher_init()
         }
     }
 
+    sim_status_msg_.name = joint_state_msg_.name;
+    sim_status_msg_.position = joint_state_msg_.position;
+    sim_status_msg_.velocity = joint_state_msg_.velocity;
+    sim_status_msg_.effort = joint_state_msg_.effort;
+
     //Sensor size setting. sensor size : model sensor size + 1
     // + 1 additional size is for user information
 
@@ -204,6 +212,8 @@ void state_publisher_init()
     }
     sensor_state_msg_.sensor[m->nsensor].name = "user information";
     sensor_state_msg_.sensor[m->nsensor].data.resize(2);
+
+    sim_status_msg_.sensor = sensor_state_msg_.sensor;
 
     std::cout << "force range " << std::endl;
     for (int i = 0; i < m->nu; i++)
@@ -257,11 +267,25 @@ void state_publisher()
     sensor_state_msg_.sensor[m->nsensor].data[0] = dif_time;
     sensor_state_msg_.sensor[m->nsensor].data[1] = com_time;
 
-    joint_state_msg_.header.stamp = ros::Time::now();
-    sensor_state_msg_.header.stamp = ros::Time::now();
-    sensor_state_pub.publish(sensor_state_msg_);
-    joint_state_pub.publish(joint_state_msg_);
-    sim_time_pub.publish(sim_time);
+    if (pub_total_mode)
+    {
+        sim_status_msg_.position = joint_state_msg_.position;
+        sim_status_msg_.velocity = joint_state_msg_.velocity;
+        sim_status_msg_.effort = joint_state_msg_.effort;
+        sim_status_msg_.sensor = sensor_state_msg_.sensor;
+        sim_status_msg_.time = d->time;
+
+        sim_status_msg_.header.stamp = ros::Time::now();
+        sim_status_pub.publish(sim_status_msg_);
+    }
+    else
+    {
+        joint_state_msg_.header.stamp = ros::Time::now();
+        sensor_state_msg_.header.stamp = ros::Time::now();
+        sensor_state_pub.publish(sensor_state_msg_);
+        joint_state_pub.publish(joint_state_msg_);
+        sim_time_pub.publish(sim_time);
+    }
 }
 
 void mycontrollerinit()
@@ -731,8 +755,8 @@ void infotext(char *title, char *content, double interval)
     }
 
     // prepare info text
-    strcpy(title, "Time\nRTime\nt_diff\nSize\nCPU\nSolver   \nFPS\nstack\nconbuf\nefcbuf\nController");
-    sprintf(content, "%-20.5f\n%-20.5f\n%-20.5f\n%d  (%d con)\n%.3f\n%.1f  (%d it)\n%.0f\n%.3f\n%.3f\n%.3f\n%s",
+    strcpy(title, "Time\nRTime\nt_diff\nSize\nCPU\nSolver   \nFPS\nstack\nconbuf\nefcbuf\nController\ntdiff");
+    sprintf(content, "%-20.5f\n%-20.5f\n%-20.5f\n%d  (%d con)\n%.3f\n%.1f  (%d it)\n%.0f\n%.3f\n%.3f\n%.3f\n%s\n%-20.6f",
             d->time, sim_time_now_ros.toSec(), sim_time_now_ros.toSec() - d->time,
             d->nefc, d->ncon,
             settings.run ? d->timer[mjTIMER_STEP].duration / mjMAX(1, d->timer[mjTIMER_STEP].number) : d->timer[mjTIMER_FORWARD].duration / mjMAX(1, d->timer[mjTIMER_FORWARD].number),
@@ -741,7 +765,8 @@ void infotext(char *title, char *content, double interval)
             d->maxuse_stack / (double)d->nstack,
             d->maxuse_con / (double)m->nconmax,
             d->maxuse_efc / (double)m->njmax,
-            ctrlstat.c_str());
+            ctrlstat.c_str(),
+            sim_cons_time);
 
     // add Energy if enabled
     if (mjENABLED(mjENBL_ENERGY))
