@@ -243,7 +243,7 @@ void state_publisher()
             joint_state_msg_.velocity[i] = d->qvel[i];
             joint_state_msg_.velocity[i + 3] = d->qvel[i + 3];
             joint_state_msg_.effort[i] = d->qacc[i];
-            joint_state_msg_.effort[i] = d->qacc[i + 3];
+            joint_state_msg_.effort[i + 3] = d->qacc[i + 3];
         }
         joint_state_msg_.position[m->nu + 6] = d->qpos[3];
     }
@@ -384,14 +384,17 @@ void mycontroller(const mjModel *m, mjData *d)
                     std::cout << command[i] << std::endl;
                 }
             }
+            static std::chrono::high_resolution_clock::time_point t_before = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point rt_now = std::chrono::high_resolution_clock::now();
 
-            static double t_before = ros::Time::now().toSec();
-            double rt_now = ros::Time::now().toSec();
+            //static double t_before = ros::Time::now().toSec();
+            //double rt_now = ros::Time::now().toSec();
 
             if (settings.timecheck)
             {
-                std::cout << "rdif : " << (rt_now - t_before) * 1000 << "\t t_now : " << d->time << " \t r_now : " << ros::Time::now().toSec() - sync_time_test.toSec() << " \t t dif : " << ros::Time::now().toSec() - sync_time_test.toSec() - d->time << std::endl;
+                std::cout << "rdif : " << std::setw(8) << (double)(rt_now - t_before).count() / 1000000.0 << "ms \t t_now : " << d->time << " \t r_now : " << ros::Time::now().toSec() - sync_time_test.toSec() << " \t t dif : " << ros::Time::now().toSec() - sync_time_test.toSec() - d->time << std::endl;
             }
+
             t_before = rt_now;
         }
     }

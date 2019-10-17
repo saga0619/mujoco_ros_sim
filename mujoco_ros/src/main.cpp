@@ -131,7 +131,9 @@ int main(int argc, char **argv)
 
     //with pub_mode param false, simulation states(joint states, sensor states, simulation time ... ) are published with each own publisher.
     //But if pub_mode param is set to True, all simulation states are going to be published by one topic, so that only one callback function from controller will be triggered.
+
     nh.param("pub_mode", pub_total_mode, false);
+
     if (pub_total_mode)
         sim_status_pub = nh.advertise<mujoco_ros_msgs::SimStatus>("/mujoco_ros_interface/sim_status", 1);
     else

@@ -10,6 +10,8 @@
 #include <mutex>
 #include <chrono>
 
+#include <iomanip>
+
 //Ros include
 #include <ros/ros.h>
 #include <Eigen/Dense>
@@ -311,7 +313,6 @@ mjtNum *ctrl_command;
 mjtNum *com_ui;
 
 bool cmd_rcv = false;
-
 
 // user state for pub
 
