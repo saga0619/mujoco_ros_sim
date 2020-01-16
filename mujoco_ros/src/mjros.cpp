@@ -140,6 +140,11 @@ void state_publisher_init()
         command[i] = 0.0;
     }
 
+    for (int i = 0; i < m->nbody * 6; i++)
+    {
+        ctrl_command2[i] = 0.0;
+    }
+
     if (m->jnt_type[0] == 0) //if first joint type is floating.
     {
         ROS_INFO("ROBOT is floating !");
@@ -354,6 +359,14 @@ void mujoco_ros_connector_init()
 void mycontroller(const mjModel *m, mjData *d)
 {
 
+    for (int i = 0; i < m->nu; i++)
+    {
+        command[i] = 0.0;
+    }
+    for (int i = 0; i < m->nbody * 6; i++)
+    {
+        command2[i] = 0.0;
+    }
     ros::spinOnce();
     if (settings.run)
     {
@@ -364,11 +377,21 @@ void mycontroller(const mjModel *m, mjData *d)
             {
                 ctrl_command[i] = command[i];
             }
+
+            for (int i = 0; i < m->nbody * 6; i++)
+            {
+                ctrl_command2[i] = command2[i];
+            }
+
             if (!settings.controlui)
             {
                 if (cmd_rcv)
                 {
                     mju_copy(d->ctrl, ctrl_command, m->nu);
+                }
+                if (custom_ft_applied)
+                {
+                    mju_copy(d->xfrc_applied, ctrl_command2, m->nbody * 6)
                 }
             }
 
@@ -1888,7 +1911,16 @@ void render(GLFWwindow *window)
         {
             Eigen::Vector3d euler;
             std::string buffer(m->names + m->name_bodyadr[pert.select]);
+/*
+            std::string bnlist[m->nbody];
+            for (int i = 0; i < m->nbody; i++)
+            {
+                bnlist[i] = std::string(m->names + m->name_bodyadr[i]);
+            }
+            mjtnum *ss = d->xfrc_applied;
 
+            ss[id * 6] = x_f ss[id * 6 + 1] = y_f;
+*/
             tf::Quaternion q_(d->xquat[pert.select * 4 + 1], d->xquat[pert.select * 4 + 2], d->xquat[pert.select * 4 + 3], d->xquat[pert.select * 4]);
             tf::Matrix3x3 m_(q_);
             tf::Vector3 global_p_(d->xpos[pert.select * 3], d->xpos[pert.select * 3 + 1], d->xpos[pert.select * 3 + 2]);

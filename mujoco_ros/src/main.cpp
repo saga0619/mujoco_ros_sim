@@ -80,6 +80,7 @@ void loadmodel(void)
 
     ros_sim_started = true;
     ctrl_command = mj_stackAlloc(d, (int)m->nu);
+    ctrl_command2 = mj_stackAlloc(d, (int)(m->nbody * 6));
 
     // re-create scene and context
     mjv_makeScene(m, &scn, maxgeom);

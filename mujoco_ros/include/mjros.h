@@ -286,6 +286,8 @@ ros::Publisher sim_time_pub;
 
 std::vector<double> command;
 
+std::vector<double> command2;
+
 int loadmodel_request = 0;
 
 bool ros_time_sync_reset;
@@ -299,6 +301,10 @@ bool reset_request = false;
 bool pause_check = true;
 
 bool pub_total_mode = false;
+
+//bool for custom applied force 
+bool custom_ft_applied = false;
+
 ros::Duration sim_time_ros;
 ros::Time sim_time_run;
 
@@ -310,6 +316,9 @@ ros::Time sync_time_test;
 std::string ctrlstat = "Missing";
 
 mjtNum *ctrl_command;
+
+mjtNum *ctrl_command2;
+
 mjtNum *com_ui;
 
 bool cmd_rcv = false;
