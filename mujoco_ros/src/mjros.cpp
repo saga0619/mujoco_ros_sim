@@ -391,7 +391,7 @@ void mycontroller(const mjModel *m, mjData *d)
                 }
                 if (custom_ft_applied)
                 {
-                    mju_copy(d->xfrc_applied, ctrl_command2, m->nbody * 6)
+                    mju_copy(d->xfrc_applied, ctrl_command2, m->nbody * 6);
                 }
             }
 
