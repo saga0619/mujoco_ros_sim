@@ -133,6 +133,7 @@ void state_publisher_init()
     joint_set_msg_.position.resize(m->nu);
     joint_set_msg_.torque.resize(m->nu);
     command.resize(m->nu);
+    command2.resize(m->nbody * 6);
 
     for (int i = 0; i < m->nu; i++)
     {
@@ -143,6 +144,7 @@ void state_publisher_init()
     for (int i = 0; i < m->nbody * 6; i++)
     {
         ctrl_command2[i] = 0.0;
+        command2[i] = 0.0;
     }
 
     if (m->jnt_type[0] == 0) //if first joint type is floating.
