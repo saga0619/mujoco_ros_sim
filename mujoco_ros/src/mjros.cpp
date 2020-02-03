@@ -50,6 +50,7 @@ void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
     if ((msg->time) > (d->time))
     {
         ROS_ERROR("JOINT SET COMMAND IS IN FUTURE : current sim time : %10.5f command time : %10.5f", d->time, msg->time);
+        cmd_rcv = false;
     }
     else if ((msg->time + 0.01) < (d->time))
     {
@@ -1906,7 +1907,7 @@ void render(GLFWwindow *window)
         {
             Eigen::Vector3d euler;
             std::string buffer(m->names + m->name_bodyadr[pert.select]);
-/*
+            /*
             std::string bnlist[m->nbody];
             for (int i = 0; i < m->nbody; i++)
             {
