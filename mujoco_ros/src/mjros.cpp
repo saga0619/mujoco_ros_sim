@@ -130,6 +130,8 @@ void rosPollEvents()
 void state_publisher_init()
 {
 
+    cmd_rcv = false;
+
     joint_set_msg_.position.resize(m->nu);
     joint_set_msg_.torque.resize(m->nu);
     command.resize(m->nu);
@@ -360,15 +362,6 @@ void mujoco_ros_connector_init()
 
 void mycontroller(const mjModel *m, mjData *d)
 {
-
-    for (int i = 0; i < m->nu; i++)
-    {
-        command[i] = 0.0;
-    }
-    for (int i = 0; i < m->nbody * 6; i++)
-    {
-        command2[i] = 0.0;
-    }
     ros::spinOnce();
     if (settings.run)
     {
