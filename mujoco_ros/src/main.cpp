@@ -208,6 +208,10 @@ int main(int argc, char **argv)
     // deactive MuJoCo
     mj_deactivate();
 
+    std_msgs::String pmsg;
+    pmsg.data=std::string("terminate");
+    sim_command_pub.publish(pmsg);
+
 // terminate GLFW (crashes with Linux NVidia drivers)
 #if defined(__APPLE__) || defined(_WIN32)
     glfwTerminate();
