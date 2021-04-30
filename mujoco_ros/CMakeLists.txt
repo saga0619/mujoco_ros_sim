@@ -1,15 +1,21 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(mujoco_ros)
 
-add_compile_options(-std=c++11 -ofast)
+add_compile_options(-std=c++11 -Ofast)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   mujoco_ros_msgs
+  eigen_conversions
 )
 
-find_package(Eigen3 REQUIRED)
+find_package(tocabi_ecat COMPONENTS)
+IF(tocabi_ecat_FOUND)
+ message(" -- shm mode enabled" )
+   ADD_DEFINITIONS(-DCOMPILE_SHAREDMEMORY)
+ENDIF()
+
 
 catkin_package(
 DEPENDS   mujoco_ros_msgs
@@ -28,6 +34,12 @@ include_directories(
 link_directories(
   ${MUJOCO_PATH}/bin
 )
+
+IF(tocabi_ecat_FOUND)
+include_directories(
+  ${tocabi_ecat_INCLUDE_DIRS}
+)
+ENDIF()
 
 file(GLOB LIB_MUJOCO ${MUJOCO_PATH}/bin/libmujoco200.so)
 

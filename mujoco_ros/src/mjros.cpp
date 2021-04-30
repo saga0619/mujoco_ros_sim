@@ -1,5 +1,5 @@
 #include "mjros.h"
-
+#include <algorithm>
 // custum function
 
 void c_reset()
@@ -32,6 +32,14 @@ void c_reset()
     profilerupdate();
     sensorupdate();
     updatesettings();
+    if (use_shm)
+    {
+#ifdef COMPILE_SHAREDMEMORY
+        mj_shm_->t_cnt = 0;
+#else
+        std::cout << "WARNING : SHM_NOT_COMPILED " << std::endl;
+#endif
+    }
 }
 
 //---------------------callback functions --------------------------------
@@ -225,76 +233,131 @@ void state_publisher_init()
 
     sim_status_msg_.sensor = sensor_state_msg_.sensor;
 
-    std::cout << "force range " << std::endl;
-    for (int i = 0; i < m->nu; i++)
-    {
-        std::cout << "actuator : " << i << " f1 :   " << m->actuator_ctrlrange[i * 2] << " f2 : " << m->actuator_ctrlrange[i * 2 + 1] << std::endl;
-    }
+    // std::cout << "force range " << std::endl;
+    // for (int i = 0; i < m->nu; i++)
+    // {
+    //     std::cout << "actuator : " << i << " f1 :   " << m->actuator_ctrlrange[i * 2] << " f2 : " << m->actuator_ctrlrange[i * 2 + 1] << std::endl;
+    // }
+
+    //     if (use_shm)
+    //     {
+    // #ifdef COMPILE_SHAREDMEMORY
+    //         //init_shm_master();
+    // #else
+    //         std::cout << "WARNING : SHM_NOT_COMPILED " << std::endl;
+    // #endif
+    //     }
 }
 
 void state_publisher()
 {
-    sim_time.data = d->time;
-
-    if (m->jnt_type[0] == 0)
+    if (!use_shm)
     {
 
-        for (int i = 0; i < m->nu; i++)
+        sim_time.data = d->time;
+
+        if (m->jnt_type[0] == 0)
         {
-            joint_state_msg_.position[i + 6] = d->qpos[i + 7];
-            joint_state_msg_.velocity[i + 6] = d->qvel[i + 6];
-            joint_state_msg_.effort[i + 6] = d->qacc[i + 6];
+
+            for (int i = 0; i < m->nu; i++)
+            {
+                joint_state_msg_.position[i + 6] = d->qpos[i + 7];
+                joint_state_msg_.velocity[i + 6] = d->qvel[i + 6];
+                joint_state_msg_.effort[i + 6] = d->qacc[i + 6];
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                joint_state_msg_.position[i] = d->qpos[i];
+                joint_state_msg_.position[i + 3] = d->qpos[i + 4];
+                joint_state_msg_.velocity[i] = d->qvel[i];
+                joint_state_msg_.velocity[i + 3] = d->qvel[i + 3];
+                joint_state_msg_.effort[i] = d->qacc[i];
+                joint_state_msg_.effort[i + 3] = d->qacc[i + 3];
+            }
+            joint_state_msg_.position[m->nu + 6] = d->qpos[3];
+        }
+        else
+        {
+            for (int i = 0; i < m->njnt; i++)
+            {
+                joint_state_msg_.position[i] = d->qpos[i];
+                joint_state_msg_.velocity[i] = d->qvel[i];
+                joint_state_msg_.effort[i] = d->qacc[i];
+            }
         }
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < m->nsensor; i++)
         {
-            joint_state_msg_.position[i] = d->qpos[i];
-            joint_state_msg_.position[i + 3] = d->qpos[i + 4];
-            joint_state_msg_.velocity[i] = d->qvel[i];
-            joint_state_msg_.velocity[i + 3] = d->qvel[i + 3];
-            joint_state_msg_.effort[i] = d->qacc[i];
-            joint_state_msg_.effort[i + 3] = d->qacc[i + 3];
+            for (int n = 0; n < m->sensor_dim[i]; n++)
+            {
+                sensor_state_msg_.sensor[i].data[n] = d->sensordata[m->sensor_adr[i] + n];
+            }
         }
-        joint_state_msg_.position[m->nu + 6] = d->qpos[3];
+        sensor_state_msg_.sensor[m->nsensor].data[0] = dif_time;
+        sensor_state_msg_.sensor[m->nsensor].data[1] = com_time;
+
+        if (pub_total_mode)
+        {
+            sim_status_msg_.position = joint_state_msg_.position;
+            sim_status_msg_.velocity = joint_state_msg_.velocity;
+            sim_status_msg_.effort = joint_state_msg_.effort;
+            sim_status_msg_.sensor = sensor_state_msg_.sensor;
+            sim_status_msg_.time = d->time;
+
+            sim_status_msg_.header.stamp = ros::Time::now();
+            sim_status_pub.publish(sim_status_msg_);
+        }
+        else
+        {
+            joint_state_msg_.header.stamp = ros::Time::now();
+            sensor_state_msg_.header.stamp = ros::Time::now();
+            sensor_state_pub.publish(sensor_state_msg_);
+            joint_state_pub.publish(joint_state_msg_);
+            sim_time_pub.publish(sim_time);
+        }
     }
     else
     {
-        for (int i = 0; i < m->njnt; i++)
-        {
-            joint_state_msg_.position[i] = d->qpos[i];
-            joint_state_msg_.velocity[i] = d->qvel[i];
-            joint_state_msg_.effort[i] = d->qacc[i];
-        }
-    }
+#ifdef COMPILE_SHAREDMEMORY
+        static int cnt = 0;
 
-    for (int i = 0; i < m->nsensor; i++)
-    {
-        for (int n = 0; n < m->sensor_dim[i]; n++)
-        {
-            sensor_state_msg_.sensor[i].data[n] = d->sensordata[m->sensor_adr[i] + n];
-        }
-    }
-    sensor_state_msg_.sensor[m->nsensor].data[0] = dif_time;
-    sensor_state_msg_.sensor[m->nsensor].data[1] = com_time;
+        mj_shm_->statusWriting = true;
 
-    if (pub_total_mode)
-    {
-        sim_status_msg_.position = joint_state_msg_.position;
-        sim_status_msg_.velocity = joint_state_msg_.velocity;
-        sim_status_msg_.effort = joint_state_msg_.effort;
-        sim_status_msg_.sensor = sensor_state_msg_.sensor;
-        sim_status_msg_.time = d->time;
+        std::copy(d->qpos + 7, d->qpos + 40, mj_shm_->pos);
+        std::copy(d->qvel + 6, d->qvel + 39, mj_shm_->vel);
+        std::copy(d->qacc + 6, d->qacc + 39, mj_shm_->torqueActual);
 
-        sim_status_msg_.header.stamp = ros::Time::now();
-        sim_status_pub.publish(sim_status_msg_);
-    }
-    else
-    {
-        joint_state_msg_.header.stamp = ros::Time::now();
-        sensor_state_msg_.header.stamp = ros::Time::now();
-        sensor_state_pub.publish(sensor_state_msg_);
-        joint_state_pub.publish(joint_state_msg_);
-        sim_time_pub.publish(sim_time);
+        //memcpy(&mj_shm_->pos, &d->qpos[7], m->na * sizeof(float));
+        //memcpy(&mj_shm_->vel, &d->qvel[6], m->na * sizeof(float));
+        //memcpy(&mj_shm_->torqueActual, &d->qacc[6], m->na * sizeof(float));
+
+        //std::copy(d->qpos, d->qpos + 3, mj_shm_->pos_virtual);
+
+        //std::copy(d->qpos + 4, d->qpos + 7, mj_shm_->pos_virtual + 3);
+
+
+        mj_shm_->pos_virtual[0] = d->qpos[0];
+        mj_shm_->pos_virtual[1] = d->qpos[1];
+        mj_shm_->pos_virtual[2] = d->qpos[2];
+        mj_shm_->pos_virtual[3] = d->qpos[4];
+        mj_shm_->pos_virtual[4] = d->qpos[5];
+        mj_shm_->pos_virtual[5] = d->qpos[6];
+        mj_shm_->pos_virtual[6] = d->qpos[3];
+
+        std::copy(d->qvel, d->qvel + 6, mj_shm_->vel_virtual);
+
+        //memcpy(&mj_shm_->pos_virtual, d->qpos, 7 * sizeof(float));
+        //memcpy(&mj_shm_->vel_virtual, d->qvel, 6 * sizeof(float));
+        mj_shm_->statusWriting = false;
+
+        mj_shm_->t_cnt++; // = cnt++;
+
+        //std::cout << d->qpos[7] << "\t" << mj_shm_->pos[0] << std::endl;
+        //std::cout<< "pub.."<<std::endl;
+#else
+        std::cout << "WARNING : SHM_NOT_COMPILED " << std::endl;
+#endif
     }
 }
 
@@ -364,20 +427,44 @@ void mujoco_ros_connector_init()
 void mycontroller(const mjModel *m, mjData *d)
 {
     ros::spinOnce();
+
     if (settings.run)
     {
         if (ros_sim_started)
         {
             state_publisher();
-            for (int i = 0; i < m->nu; i++)
-            {
-                ctrl_command[i] = command[i];
-            }
 
-            for (int i = 0; i < m->nbody * 6; i++)
+            if (use_shm)
             {
-                ctrl_command2[i] = command2[i];
+#ifdef COMPILE_SHAREDMEMORY
+
+                while (mj_shm_->commanding)
+                {
+                    std::this_thread::sleep_for(std::chrono::microseconds(1));
+                }
+                cmd_rcv = true;
+                //std::copy(mj_shm_->torqueCommand, mj_shm_->torqueCommand + m->nu, ctrl_command);
+                for (int i = 0; i < m->nu; i++)
+                    ctrl_command[i] = mj_shm_->torqueCommand[i];
+#else
+                std::cout << "WARNING : Getting command, while SHM_NOT_COMPILED " << std::endl;
+#endif
             }
+            else
+            {
+                memcpy(ctrl_command, &command[0], m->nu * sizeof(float));
+            }
+            // for (int i = 0; i < m->nu; i++)
+            // {
+            //     ctrl_command[i] = command[i];
+            // }
+            // if (custom_ft_applied)
+            // {
+            //     for (int i = 0; i < m->nbody * 6; i++)
+            //     {
+            //         ctrl_command2[i] = command2[i];
+            //     }
+            // }
 
             if (!settings.controlui)
             {
@@ -400,8 +487,9 @@ void mycontroller(const mjModel *m, mjData *d)
                 for (int i = 0; i < m->nu; i++)
                 {
 
-                    std::cout << command[i] << std::endl;
+                    std::cout << ctrl_command[i] <<"\t";
                 }
+                std::cout<< std::endl;
             }
             static std::chrono::high_resolution_clock::time_point t_before = std::chrono::high_resolution_clock::now();
             std::chrono::high_resolution_clock::time_point rt_now = std::chrono::high_resolution_clock::now();
@@ -2044,7 +2132,7 @@ void init(std::string key_file)
         mju_error("Headers and library have different versions");
 
     // activate MuJoCo license
-    ROS_INFO("license file located at %s", key_file.c_str());
+    //ROS_INFO("license file located at %s", key_file.c_str());
     mj_activate(key_file.c_str());
 
     // init GLFW, set timer callback (milliseconds)

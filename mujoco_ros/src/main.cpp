@@ -120,31 +120,40 @@ int main(int argc, char **argv)
     // :: ROS CUSTUM :: initialize ros
     ros::init(argc, argv, "mujoco_ros");
     ros::NodeHandle nh("~");
-
     std::string key_file;
     nh.param<std::string>("license", key_file, "mjkey.txt");
 
-    //register publisher & subscriber
-    joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set", 1, jointset_callback, ros::TransportHints().tcpNoDelay(true));
-    //joint_set_mujoco = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set_mujoco",1,joint)
+    nh.param("use_shm", use_shm, false);
     sim_command_sub = nh.subscribe<std_msgs::String>("/mujoco_ros_interface/sim_command_con2sim", 100, sim_command_callback);
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con", 1);
 
-    //with pub_mode param false, simulation states(joint states, sensor states, simulation time ... ) are published with each own publisher.
-    //But if pub_mode param is set to True, all simulation states are going to be published by one topic, so that only one callback function from controller will be triggered.
+    if (!use_shm)
+    {
+        //register publisher & subscriber
+        joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set", 1, jointset_callback, ros::TransportHints().tcpNoDelay(true));
+        //joint_set_mujoco = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set_mujoco",1,joint)
 
-    nh.param("pub_mode", pub_total_mode, false);
+        //with pub_mode param false, simulation states(joint states, sensor states, simulation time ... ) are published with each own publisher.
+        //But if pub_mode param is set to True, all simulation states are going to be published by one topic, so that only one callback function from controller will be triggered.
 
-    if (pub_total_mode)
-        sim_status_pub = nh.advertise<mujoco_ros_msgs::SimStatus>("/mujoco_ros_interface/sim_status", 1);
+        nh.param("pub_mode", pub_total_mode, false);
+
+        if (pub_total_mode)
+            sim_status_pub = nh.advertise<mujoco_ros_msgs::SimStatus>("/mujoco_ros_interface/sim_status", 1);
+        else
+        {
+            joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
+            sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time", 1);
+            sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states", 1);
+        }
+    }
     else
     {
-        joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
-        sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time", 1);
-        sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states", 1);
+
+        init_mjshm();
     }
 
-    ROS_INFO("ROS initialize complete");
+    //ROS_INFO("ROS initialize complete");
     sim_time_ros = ros::Duration(0);
     sim_time_run = ros::Time::now();
     sim_time_now_ros = ros::Duration(0);
@@ -209,8 +218,9 @@ int main(int argc, char **argv)
     mj_deactivate();
 
     std_msgs::String pmsg;
-    pmsg.data=std::string("terminate");
+    pmsg.data = std::string("terminate");
     sim_command_pub.publish(pmsg);
+
 
 // terminate GLFW (crashes with Linux NVidia drivers)
 #if defined(__APPLE__) || defined(_WIN32)
