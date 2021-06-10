@@ -14,11 +14,14 @@ position/torque command available
 
 clone this git to your_catkin_ws/src, then compile with catkin_make
 
+with tocabi_ecat package, mujoco can send status , receive commands via shared memory
+
 ## how to start  
 
 you can test mujoco_ros_sim with dyros_red or dyros_jet
 
-* [DYROS_RED](https://github.com/saga702/dyros_red)
+* [DYROS_RED](https://github.com/saga0619/dyros_red)
 * [DYROS_JET](https://github.com/psh117/dyros_jet)
-
+* [DYROS_TOCABI](https://github.com/saga0619/dyros_tocabi)
+* [DYROS_TOCABI_V2](https://github.com/saga0619/dyros_tocabi_v2)
 
