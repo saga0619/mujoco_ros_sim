@@ -35,7 +35,7 @@ void c_reset()
     if (use_shm)
     {
 #ifdef COMPILE_SHAREDMEMORY
-        mj_shm_->t_cnt = 0;
+        mj_shm_->statusCount = 0;
 #else
         std::cout << "WARNING : SHM_NOT_COMPILED " << std::endl;
 #endif
@@ -336,7 +336,6 @@ void state_publisher()
 
         //std::copy(d->qpos + 4, d->qpos + 7, mj_shm_->pos_virtual + 3);
 
-
         mj_shm_->pos_virtual[0] = d->qpos[0];
         mj_shm_->pos_virtual[1] = d->qpos[1];
         mj_shm_->pos_virtual[2] = d->qpos[2];
@@ -345,13 +344,47 @@ void state_publisher()
         mj_shm_->pos_virtual[5] = d->qpos[6];
         mj_shm_->pos_virtual[6] = d->qpos[3];
 
+        for (int i = 0; i < m->nsensor; i++)
+        {
+
+            std::string sensor_name = sensor_state_msg_.sensor[i].name;
+            if (sensor_name == "Acc_Pelvis_IMU")
+            {
+                mj_shm_->imu_acc[0] = d->sensordata[m->sensor_adr[8] + 0];
+                mj_shm_->imu_acc[0] = d->sensordata[m->sensor_adr[8] + 1];
+                mj_shm_->imu_acc[0] = d->sensordata[m->sensor_adr[8] + 2];
+            }
+            else if (sensor_name == "LF_Force_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor[j] = d->sensordata[m->sensor_adr[i] + j];
+            }
+            else if (sensor_name == "LF_Torque_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor[j + 3] = d->sensordata[m->sensor_adr[i] + j];
+            }
+            else if (sensor_name == "RF_Force_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor[j + 6] = d->sensordata[m->sensor_adr[i] + j];
+            }
+            else if (sensor_name == "RF_Torque_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor[j + 9] = d->sensordata[m->sensor_adr[i] + j];
+            }
+        }
+
         std::copy(d->qvel, d->qvel + 6, mj_shm_->vel_virtual);
 
         //memcpy(&mj_shm_->pos_virtual, d->qpos, 7 * sizeof(float));
         //memcpy(&mj_shm_->vel_virtual, d->qvel, 6 * sizeof(float));
+        mj_shm_->control_time_us_ = (int)d->time * 1000000;
+
         mj_shm_->statusWriting = false;
 
-        mj_shm_->t_cnt++; // = cnt++;
+        mj_shm_->statusCount++; // = cnt++;
 
         //std::cout << d->qpos[7] << "\t" << mj_shm_->pos[0] << std::endl;
         //std::cout<< "pub.."<<std::endl;
@@ -487,9 +520,9 @@ void mycontroller(const mjModel *m, mjData *d)
                 for (int i = 0; i < m->nu; i++)
                 {
 
-                    std::cout << ctrl_command[i] <<"\t";
+                    std::cout << ctrl_command[i] << "\t";
                 }
-                std::cout<< std::endl;
+                std::cout << std::endl;
             }
             static std::chrono::high_resolution_clock::time_point t_before = std::chrono::high_resolution_clock::now();
             std::chrono::high_resolution_clock::time_point rt_now = std::chrono::high_resolution_clock::now();
