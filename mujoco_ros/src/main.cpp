@@ -149,8 +149,9 @@ int main(int argc, char **argv)
     }
     else
     {
-
+#ifdef COMPILE_SHAREDMEMORY
         init_mjshm();
+#endif
     }
 
     //ROS_INFO("ROS initialize complete");
