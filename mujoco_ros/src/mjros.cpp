@@ -386,6 +386,8 @@ void state_publisher()
 
         mj_shm_->statusCount++; // = cnt++;
 
+        mj_shm_->triggerS1 = true;
+
         //std::cout << d->qpos[7] << "\t" << mj_shm_->pos[0] << std::endl;
         //std::cout<< "pub.."<<std::endl;
 #else
