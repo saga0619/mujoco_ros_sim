@@ -16,16 +16,17 @@ IF(tocabi_ecat_FOUND)
    ADD_DEFINITIONS(-DCOMPILE_SHAREDMEMORY)
 ENDIF()
 
+set(MUJOCO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../mjpro200)
+
+message("MuJoCo path: " ${MUJOCO_PATH})
 
 catkin_package(
 DEPENDS   mujoco_ros_msgs
 )
 
-set(MUJOCO_PATH ${CMAKE_SOURCE_DIR}/mujoco_ros_sim/mjpro200)
 
 include_directories(
   include
-
   ${MUJOCO_PATH}/include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
@@ -68,4 +69,3 @@ target_link_libraries(mujoco_ros
 add_dependencies(mujoco_ros_lib ${catkin_EXPORTED_TARGETS})
 add_dependencies(mujoco_ros ${catkin_EXPORTED_TARGETS})
 
-message(STATUS "MuJoCo path: " ${MUJOCO_PATH})
