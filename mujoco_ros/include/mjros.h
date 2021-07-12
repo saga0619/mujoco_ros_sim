@@ -26,7 +26,7 @@
 #include <tf/transform_datatypes.h>
 
 #ifdef COMPILE_SHAREDMEMORY
-#include "tocabi_ecat/shm_msgs.h"
+#include "shm_msgs.h"
 SHMmsgs *mj_shm_;
 void init_mjshm()
 {

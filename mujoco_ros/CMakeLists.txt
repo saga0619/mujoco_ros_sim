@@ -10,8 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
 )
 
-find_package(tocabi_ecat COMPONENTS)
-IF(tocabi_ecat_FOUND)
+find_package(tocabi_lib COMPONENTS)
+IF(tocabi_lib_FOUND)
  message(" -- shm mode enabled" )
    ADD_DEFINITIONS(-DCOMPILE_SHAREDMEMORY)
 ENDIF()
@@ -36,9 +36,9 @@ link_directories(
   ${MUJOCO_PATH}/bin
 )
 
-IF(tocabi_ecat_FOUND)
+IF(tocabi_lib_FOUND)
 include_directories(
-  ${tocabi_ecat_INCLUDE_DIRS}
+  ${tocabi_lib_INCLUDE_DIRS}
 )
 ENDIF()
 
