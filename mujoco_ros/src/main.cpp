@@ -150,7 +150,7 @@ int main(int argc, char **argv)
     else
     {
 #ifdef COMPILE_SHAREDMEMORY
-        init_mjshm();
+        init_shm(shm_msg_key, shm_msg_id, &mj_shm_);
 #endif
     }
 
@@ -221,8 +221,10 @@ int main(int argc, char **argv)
     std_msgs::String pmsg;
     pmsg.data = std::string("terminate");
     sim_command_pub.publish(pmsg);
-
-
+    
+#ifdef COMPILE_SHAREDMEMORY
+        deleteSharedMemory(shm_msg_id, mj_shm_);
+#endif
 // terminate GLFW (crashes with Linux NVidia drivers)
 #if defined(__APPLE__) || defined(_WIN32)
     glfwTerminate();
