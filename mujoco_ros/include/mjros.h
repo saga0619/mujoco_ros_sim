@@ -29,53 +29,7 @@
 #include "shm_msgs.h"
 SHMmsgs *mj_shm_;
 int shm_msg_id;
-// void init_mjshm()
-// {
-//     if ((shm_msg_id = shmget(shm_msg_key, sizeof(SHMmsgs), IPC_CREAT | 0666)) == -1)
-//     {
-//         std::cout << "shm mtx failed " << std::endl;
-//         exit(0);
-//     }
 
-//     if ((mj_shm_ = (SHMmsgs *)shmat(shm_msg_id, NULL, 0)) == (SHMmsgs *)-1)
-//     {
-//         std::cout << "shmat failed " << std::endl;
-//         exit(0);
-//     }
-
-//     if (shmctl(shm_msg_id, SHM_LOCK, NULL) == 0)
-//     {
-//         //std::cout << "SHM_LOCK enabled" << std::endl;
-//     }
-//     else
-//     {
-//         std::cout << "SHM lock failed" << std::endl;
-//     }
-
-//     mj_shm_->t_cnt = 0;
-//     mj_shm_->t_cnt2 = 0;
-//     mj_shm_->controllerReady = false;
-//     mj_shm_->statusWriting = false;
-//     mj_shm_->commanding = false;
-//     mj_shm_->reading = false;
-//     mj_shm_->shutdown = false;
-
-//     //
-//     //float lat_avg, lat_min, lat_max, lat_dev;
-//     //float send_avg, send_min, send_max, send_dev;
-
-//     mj_shm_->lat_avg2 = 0;
-//     mj_shm_->lat_min2 = 0;
-//     mj_shm_->lat_max2 = 100000;
-//     mj_shm_->lat_dev2 = 0;
-
-//     mj_shm_->send_avg2 = 0;
-//     mj_shm_->send_min2 = 0;
-//     mj_shm_->send_max2 = 100000;
-//     mj_shm_->send_dev2 = 0;
-
-//     //std::cout << "shm master initialized" << std::endl;
-// }
 #define USE_SHM true
 #else
 #define USE_SHM false
