@@ -2159,7 +2159,7 @@ void simulate(void)
 //-------------------------------- init and main ----------------------------------------
 
 // initalize everything
-void init(std::string key_file)
+void init()
 {
     // print version, check compatibility
     printf("MuJoCo Pro version %.2lf\n", 0.01 * mj_version());
@@ -2168,7 +2168,7 @@ void init(std::string key_file)
 
     // activate MuJoCo license
     //ROS_INFO("license file located at %s", key_file.c_str());
-    mj_activate(key_file.c_str());
+    // mj_activate(key_file.c_str());
 
     // init GLFW, set timer callback (milliseconds)
     if (!glfwInit())

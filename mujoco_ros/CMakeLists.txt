@@ -16,7 +16,7 @@ IF(tocabi_lib_FOUND)
    ADD_DEFINITIONS(-DCOMPILE_SHAREDMEMORY)
 ENDIF()
 
-set(MUJOCO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../mjpro200)
+set(MUJOCO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../mujoco210)
 
 message("MuJoCo path: " ${MUJOCO_PATH})
 
@@ -42,7 +42,7 @@ include_directories(
 )
 ENDIF()
 
-file(GLOB LIB_MUJOCO ${MUJOCO_PATH}/bin/libmujoco200.so)
+file(GLOB LIB_MUJOCO ${MUJOCO_PATH}/bin/libmujoco210.so)
 
 file(GLOB UI_SRC "${MUJOCO_PATH}/include/uitools.c")
 

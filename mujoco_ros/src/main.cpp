@@ -160,7 +160,7 @@ int main(int argc, char **argv)
     sim_time_now_ros = ros::Duration(0);
 
     // initialize everything
-    init(key_file);
+    init();
 
     std::string model_file;
     // request loadmodel if file given (otherwise drag-and-drop)
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
     mjr_freeContext(&con);
 
     // deactive MuJoCo
-    mj_deactivate();
+    // mj_deactivate();
 
     std_msgs::String pmsg;
     pmsg.data = std::string("terminate");

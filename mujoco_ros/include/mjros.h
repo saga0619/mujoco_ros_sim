@@ -270,7 +270,7 @@ void uiEvent(mjuiState *state);
 void prepare(void);
 void render(GLFWwindow *window);
 void simulate(void);
-void init(std::string key_file);
+void init();
 void rosPollEvents();
 
 std::mutex mtx;
