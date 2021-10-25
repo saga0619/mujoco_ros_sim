@@ -100,6 +100,7 @@ void loadmodel(void)
     {
         char title[200] = "Simulate : ";
         strcat(title, m->names);
+        strcat(title, ros::this_node::getNamespace().c_str());
         glfwSetWindowTitle(window, title);
     }
 
@@ -128,23 +129,46 @@ int main(int argc, char **argv)
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con", 1);
 
     if (!use_shm)
-    {
-        //register publisher & subscriber
-        joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set", 1, jointset_callback, ros::TransportHints().tcpNoDelay(true));
-        //joint_set_mujoco = nh.subscribe<mujoco_ros_msgs::JointSet>("/mujoco_ros_interface/joint_set_mujoco",1,joint)
-
-        //with pub_mode param false, simulation states(joint states, sensor states, simulation time ... ) are published with each own publisher.
-        //But if pub_mode param is set to True, all simulation states are going to be published by one topic, so that only one callback function from controller will be triggered.
-
+    {        
         nh.param("pub_mode", pub_total_mode, false);
+        std::cout<<"Name Space: " << ros::this_node::getNamespace() << std::endl;
+
+        //register publisher & subscriber
+        char prefix[200] = "/mujoco_ros_interface";
+        char joint_set_name[200];
+        char sim_status_name[200];
+        char joint_state_name[200];
+        char sim_time_name[200];
+        char sensor_state_name[200];
+
+        strcpy(joint_set_name, prefix);
+        strcpy(sim_status_name, prefix);
+        strcpy(joint_state_name, prefix);
+        strcpy(sim_time_name, prefix);
+        strcpy(sensor_state_name, prefix);
+        if (ros::this_node::getNamespace() != "/")
+        {
+            strcat(joint_set_name, ros::this_node::getNamespace().c_str());
+            strcat(sim_status_name, ros::this_node::getNamespace().c_str());
+            strcat(joint_state_name, ros::this_node::getNamespace().c_str());
+            strcat(sim_time_name, ros::this_node::getNamespace().c_str());
+            strcat(sensor_state_name, ros::this_node::getNamespace().c_str());
+        }
+        strcat(joint_set_name, "/joint_set");
+        strcat(sim_status_name, "/sim_status");
+        strcat(joint_state_name, "/joint_states");
+        strcat(sim_time_name, "/sim_time");
+        strcat(sensor_state_name, "/sensor_states");
+
+        joint_set = nh.subscribe<mujoco_ros_msgs::JointSet>(joint_set_name, 1, jointset_callback, ros::TransportHints().tcpNoDelay(true));
 
         if (pub_total_mode)
-            sim_status_pub = nh.advertise<mujoco_ros_msgs::SimStatus>("/mujoco_ros_interface/sim_status", 1);
+            sim_status_pub = nh.advertise<mujoco_ros_msgs::SimStatus>(sim_status_name, 1);
         else
         {
-            joint_state_pub = nh.advertise<sensor_msgs::JointState>("/mujoco_ros_interface/joint_states", 1);
-            sim_time_pub = nh.advertise<std_msgs::Float32>("/mujoco_ros_interface/sim_time", 1);
-            sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>("/mujoco_ros_interface/sensor_states", 1);
+            joint_state_pub = nh.advertise<sensor_msgs::JointState>(joint_state_name, 1);
+            sim_time_pub = nh.advertise<std_msgs::Float32>(sim_time_name, 1);
+            sensor_state_pub = nh.advertise<mujoco_ros_msgs::SensorState>(sensor_state_name, 1);
         }
     }
     else
@@ -221,7 +245,7 @@ int main(int argc, char **argv)
     std_msgs::String pmsg;
     pmsg.data = std::string("terminate");
     sim_command_pub.publish(pmsg);
-    
+
 #ifdef COMPILE_SHAREDMEMORY
         deleteSharedMemory(shm_msg_id, mj_shm_);
 #endif
