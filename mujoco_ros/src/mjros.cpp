@@ -146,8 +146,6 @@ void state_publisher_init()
     command.resize(m->nu);
     command2.resize(m->nbody * 6);
     ctrl_command_temp_.resize(m->nu);
-    
-
 
     for (int i = 0; i < m->nu; i++)
     {
@@ -499,7 +497,7 @@ void mycontroller(const mjModel *m, mjData *d)
 
             std::copy(ctrl_cmd_que_[0].begin(), ctrl_cmd_que_[0].end(), ctrl_command);
 
-            while(ctrl_cmd_que_.size() > com_latency)
+            while (ctrl_cmd_que_.size() > com_latency)
             {
                 ctrl_cmd_que_.pop_front();
             }
@@ -1568,21 +1566,22 @@ void uiEvent(mjuiState *state)
                 c_reset();
                 break;
 
-            case 8: // Latency ++ 
+            case 8: // Latency ++
                 com_latency++;
                 char com_key[10];
-                std::cout<<"com_latency ++"<<std::endl;
-                sprintf(com_key, "%d", com_latency);
-
+                //std::cout << "com_latency ++" << std::endl;
+                sprintf(com_key, "%5.2f ms", (com_latency * m->opt.timestep * 1000.0));
                 strcpy(ui0.sect[SECT_SIMULATION].item[10].multi.name[0], com_key);
                 mjui_update(-1, -1, &ui0, &uistate, &con);
                 break;
 
             case 9: // Latency --
                 com_latency--;
+                if (com_latency < 0)
+                    com_latency = 0;
                 com_key[10];
-                std::cout<<"com_latency --"<<std::endl;
-                sprintf(com_key, "%d", com_latency);
+                //std::cout << "com_latency --" << std::endl;
+                sprintf(com_key, "%5.2f ms", (com_latency * m->opt.timestep * 1000.0));
                 strcpy(ui0.sect[SECT_SIMULATION].item[10].multi.name[0], com_key);
                 mjui_update(-1, -1, &ui0, &uistate, &con);
                 break;
