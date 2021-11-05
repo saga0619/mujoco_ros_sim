@@ -25,6 +25,8 @@
 #include <sensor_msgs/JointState.h>
 #include <tf/transform_datatypes.h>
 
+#include <deque>
+
 #ifdef COMPILE_SHAREDMEMORY
 #include "shm_msgs.h"
 SHMmsgs *mj_shm_;
@@ -68,6 +70,8 @@ mjuiState uistate;
 mjUI ui0, ui1;
 
 int key_ui = 0;
+
+int com_latency = 0;
 
 // UI settings not contained in MuJoCo structures
 struct setting_
@@ -184,6 +188,9 @@ mjuiDef defSimulation[] =
         {mjITEM_BUTTON, "Key + ", 2, NULL, " #266"},
         {mjITEM_BUTTON, "Key - ", 2, NULL, " #267"},
         {mjITEM_STATIC, "Key", 2, NULL, " 0"},
+        {mjITEM_BUTTON, "Latency + ", 2, NULL, ""},
+        {mjITEM_BUTTON, "Latency - ", 2, NULL, ""},
+        {mjITEM_STATIC, "Latency", 2, NULL, " 0"},
         {mjITEM_BUTTON, "Reset to key", 3, NULL, " #259"},
         {mjITEM_BUTTON, "Set key", 3},
         {mjITEM_END}};
@@ -325,6 +332,10 @@ ros::Duration ros_sim_runtime;
 ros::Time sync_time_test;
 
 std::string ctrlstat = "Missing";
+
+std::vector<float> ctrl_command_temp_;
+
+std::deque<std::vector<float>> ctrl_cmd_que_;
 
 mjtNum *ctrl_command;
 mjtNum *ctrl_command2;

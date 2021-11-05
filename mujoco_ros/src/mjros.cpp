@@ -145,6 +145,9 @@ void state_publisher_init()
     joint_set_msg_.torque.resize(m->nu);
     command.resize(m->nu);
     command2.resize(m->nbody * 6);
+    ctrl_command_temp_.resize(m->nu);
+    
+
 
     for (int i = 0; i < m->nu; i++)
     {
@@ -480,26 +483,28 @@ void mycontroller(const mjModel *m, mjData *d)
                 cmd_rcv = true;
                 //std::copy(mj_shm_->torqueCommand, mj_shm_->torqueCommand + m->nu, ctrl_command);
                 for (int i = 0; i < m->nu; i++)
-                    ctrl_command[i] = mj_shm_->torqueCommand[i];
+                    ctrl_command_temp_[i] = mj_shm_->torqueCommand[i];
 #else
                 std::cout << "WARNING : Getting command, while SHM_NOT_COMPILED " << std::endl;
 #endif
             }
             else
             {
-                std::copy(command.begin(), command.end(), ctrl_command);
+                std::copy(command.begin(), command.end(), ctrl_command_temp_.begin());
             }
-            // for (int i = 0; i < m->nu; i++)
-            // {
-            //     ctrl_command[i] = command[i];
-            // }
-            // if (custom_ft_applied)
-            // {
-            //     for (int i = 0; i < m->nbody * 6; i++)
-            //     {
-            //         ctrl_command2[i] = command2[i];
-            //     }
-            // }
+
+            static int clat_l = 0;
+
+            ctrl_cmd_que_.push_back(ctrl_command_temp_);
+
+            std::copy(ctrl_cmd_que_[0].begin(), ctrl_cmd_que_[0].end(), ctrl_command);
+
+            while(ctrl_cmd_que_.size() > com_latency)
+            {
+                ctrl_cmd_que_.pop_front();
+            }
+
+            clat_l = com_latency;
 
             if (!settings.controlui)
             {
@@ -1563,11 +1568,30 @@ void uiEvent(mjuiState *state)
                 c_reset();
                 break;
 
-            case 8: // Reset to key
+            case 8: // Latency ++ 
+                com_latency++;
+                char com_key[10];
+                std::cout<<"com_latency ++"<<std::endl;
+                sprintf(com_key, "%d", com_latency);
+
+                strcpy(ui0.sect[SECT_SIMULATION].item[10].multi.name[0], com_key);
+                mjui_update(-1, -1, &ui0, &uistate, &con);
+                break;
+
+            case 9: // Latency --
+                com_latency--;
+                com_key[10];
+                std::cout<<"com_latency --"<<std::endl;
+                sprintf(com_key, "%d", com_latency);
+                strcpy(ui0.sect[SECT_SIMULATION].item[10].multi.name[0], com_key);
+                mjui_update(-1, -1, &ui0, &uistate, &con);
+                break;
+
+            case 11: // Reset to key
                 c_reset();
                 break;
 
-            case 9: // Set key
+            case 12: // Set key
                 i = settings.key;
                 m->key_time[i] = d->time;
                 mju_copy(m->key_qpos + i * m->nq, d->qpos, m->nq);
