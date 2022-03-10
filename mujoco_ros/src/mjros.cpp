@@ -1551,7 +1551,7 @@ void uiEvent(mjuiState *state)
                 if (settings.key > m->nkey - 1)
                     settings.key = 0;
                 char s_key[10];
-                sprintf(s_key, "%d", settings.key);
+                sprintf(s_key, "%d", (unsigned short)settings.key);
                 strcpy(ui0.sect[SECT_SIMULATION].item[7].multi.name[0], s_key);
                 c_reset();
                 break;
@@ -1561,7 +1561,7 @@ void uiEvent(mjuiState *state)
                 if (settings.key < 0)
                     settings.key = m->nkey - 1;
                 s_key[10];
-                sprintf(s_key, "%d", settings.key);
+                sprintf(s_key, "%d", (unsigned short)settings.key);
                 strcpy(ui0.sect[SECT_SIMULATION].item[7].multi.name[0], s_key);
                 c_reset();
                 break;
