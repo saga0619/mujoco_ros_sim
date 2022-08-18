@@ -375,6 +375,26 @@ void state_publisher()
                 for (int j = 0; j < 3; j++)
                     mj_shm_->ftSensor[j + 9] = d->sensordata[m->sensor_adr[i] + j];
             }
+            else if (sensor_name == "LH_Force_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor2[j] = d->sensordata[m->sensor_adr[i] + j];
+            }
+            else if (sensor_name == "LH_Torque_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor2[j + 3] = d->sensordata[m->sensor_adr[i] + j];
+            }
+            else if (sensor_name == "RH_Force_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor2[j + 6] = d->sensordata[m->sensor_adr[i] + j];
+            }
+            else if (sensor_name == "RH_Torque_sensor")
+            {
+                for (int j = 0; j < 3; j++)
+                    mj_shm_->ftSensor2[j + 9] = d->sensordata[m->sensor_adr[i] + j];
+            }
         }
 
         std::copy(d->qvel, d->qvel + 6, mj_shm_->vel_virtual);
