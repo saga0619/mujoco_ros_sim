@@ -352,8 +352,8 @@ void state_publisher()
             if (sensor_name == "Acc_Pelvis_IMU")
             {
                 mj_shm_->imu_acc[0] = d->sensordata[m->sensor_adr[8] + 0];
-                mj_shm_->imu_acc[0] = d->sensordata[m->sensor_adr[8] + 1];
-                mj_shm_->imu_acc[0] = d->sensordata[m->sensor_adr[8] + 2];
+                mj_shm_->imu_acc[1] = d->sensordata[m->sensor_adr[8] + 1];
+                mj_shm_->imu_acc[2] = d->sensordata[m->sensor_adr[8] + 2];
             }
             else if (sensor_name == "LF_Force_sensor")
             {
