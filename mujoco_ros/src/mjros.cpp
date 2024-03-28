@@ -46,7 +46,10 @@ void c_reset()
 
 void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
 {
-
+    // ROS_INFO("msg->position.size() : %d", msg->position.size());
+    // for (int i = 0; i < msg->position.size(); i++)
+        // ROS_INFO("msg->position[i] : %10.5f", msg->position[i]);
+    // ROS_INFO("m->nu : %d", m->nu);
     com_time = ros::Time::now().toSec() - msg->header.stamp.toSec();
     dif_time = d->time - msg->time;
     cmd_rcv = true;
@@ -55,44 +58,71 @@ void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
 
     ROS_INFO_COND(settings.debug, "TIME INFORMATION :::: state time : %10.5f , command time : %10.5f, time dif : %10.5f , com time : %10.5f ", msg->time, d->time, dif_time, com_time);
 
-    if ((msg->time) > (d->time))
+    //MODE 0 position
+    //MODE 1 torque
+    if (msg->MODE == 1)
     {
-        ROS_ERROR("JOINT SET COMMAND IS IN FUTURE : current sim time : %10.5f command time : %10.5f", d->time, msg->time);
-        cmd_rcv = false;
-    }
-    else if ((msg->time + 0.01) < (d->time))
-    {
-        ROS_ERROR("Sim time and Command time error exceeds 0.01 sim time : %10.5f command time : %10.5f", d->time, msg->time);
-    }
-    else
-    {
-        //MODE 0 position
-        //MODE 1 torque
-        if (msg->MODE == 1)
+        if (joint_set_msg_.torque.size() == m->nu)
         {
-            if (joint_set_msg_.torque.size() == m->nu)
-            {
-                for (int i = 0; i < m->nu; i++)
-                    command[i] = msg->torque[i];
-            }
-            else
-            {
-                ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
-            }
+            for (int i = 0; i < m->nu; i++)
+                command[i] = msg->torque[i];
         }
-        else if (msg->MODE == 0)
+        else
         {
-            if (joint_set_msg_.torque.size() == m->nu)
-            {
-                for (int i = 0; i < m->nu; i++)
-                    command[i] = msg->position[i];
-            }
-            else
-            {
-                ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
-            }
+            ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
         }
     }
+    else if (msg->MODE == 0)
+    {
+        if (joint_set_msg_.torque.size() == m->nu)
+        {
+            for (int i = 0; i < m->nu; i++)
+                command[i] = msg->position[i];
+        }
+        else
+        {
+            ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
+        }
+    }
+
+    // if ((msg->time) > (d->time))
+    // {
+    //     ROS_ERROR("JOINT SET COMMAND IS IN FUTURE : current sim time : %10.5f command time : %10.5f", d->time, msg->time);
+    //     cmd_rcv = false;
+    // }
+    // else if ((msg->time + 0.01) < (d->time))
+    // {
+    //     ROS_ERROR("Sim time and Command time error exceeds 0.01 sim time : %10.5f command time : %10.5f", d->time, msg->time);
+    // }
+    // else
+    // {
+    //     //MODE 0 position
+    //     //MODE 1 torque
+    //     if (msg->MODE == 1)
+    //     {
+    //         if (joint_set_msg_.torque.size() == m->nu)
+    //         {
+    //             for (int i = 0; i < m->nu; i++)
+    //                 command[i] = msg->torque[i];
+    //         }
+    //         else
+    //         {
+    //             ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
+    //         }
+    //     }
+    //     else if (msg->MODE == 0)
+    //     {
+    //         if (joint_set_msg_.torque.size() == m->nu)
+    //         {
+    //             for (int i = 0; i < m->nu; i++)
+    //                 command[i] = msg->position[i];
+    //         }
+    //         else
+    //         {
+    //             ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
+    //         }
+    //     }
+    // }
 }
 
 void sim_command_callback(const std_msgs::StringConstPtr &msg)
