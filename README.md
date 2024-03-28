@@ -1,3 +1,7 @@
+# Forked by Hokyun-Lee
+import KSY hand (https://github.com/roro07ksy/hand_urdf_discription) to mujoco
+
+
 # mujoco_ros_sim
 
 Simple connect between mujoco with ros. 
