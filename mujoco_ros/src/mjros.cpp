@@ -46,10 +46,6 @@ void c_reset()
 
 void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
 {
-    // ROS_INFO("msg->position.size() : %d", msg->position.size());
-    // for (int i = 0; i < msg->position.size(); i++)
-        // ROS_INFO("msg->position[i] : %10.5f", msg->position[i]);
-    // ROS_INFO("m->nu : %d", m->nu);
     com_time = ros::Time::now().toSec() - msg->header.stamp.toSec();
     dif_time = d->time - msg->time;
     cmd_rcv = true;

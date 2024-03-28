@@ -46,8 +46,6 @@ void loadmodel(void)
     {
         ROS_INFO("filename : %s", filename);
         mnew = mj_loadXML(filename, NULL, error, 500);
-        ROS_INFO("hkhkhkhkhkhkhk");
-
     }
 
     if (!mnew)
@@ -55,8 +53,6 @@ void loadmodel(void)
         printf("%s\n", error);
         return;
     }
-    ROS_INFO("hhhhhhhhhhhhhhh");
-
 
     // compiler warning: print and pause
     if (error[0])
@@ -67,22 +63,18 @@ void loadmodel(void)
         settings.run = 0;
     }
     
-    ROS_INFO("kkkkkkkkkkkkk");
-    // ROS_INFO("1m->nu : %d", m->nu);
 
     // delete old model, assign new
     mj_deleteData(d);
     mj_deleteModel(m);
     m = mnew;
     d = mj_makeData(m);
-    ROS_INFO("2m->nu : %d", m->nu);
 
     int i = settings.key;
     d->time = m->key_time[i];
     mju_copy(d->qpos, m->key_qpos + i * m->nq, m->nq);
     mju_copy(d->qvel, m->key_qvel + i * m->nv, m->nv);
     mju_copy(d->act, m->key_act + i * m->na, m->na);
-    ROS_INFO("3m->nu : %d", m->nu);
 
     if (m->actuator_biastype[0])
     {
