@@ -2065,7 +2065,6 @@ void makeArrow(mjvGeom* arrow)
 	arrow->pos[2] = d->xpos[3*force_appiedd_link_idx_ + 2];
 }
 
-
 //--------------------------- rendering and simulation ----------------------------------
 
 // sim thread synchronization
