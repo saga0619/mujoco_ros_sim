@@ -28,10 +28,8 @@ void loadmodel(void)
     settings.loadrequest = 0;
 
     // make sure filename is not empty
-    if (!filename[0]){
-        ROS_ERROR("filename is empty");
+    if (!filename[0])
         return;
-    }
 
     // load and compile
     char error[500] = "";
@@ -44,10 +42,8 @@ void loadmodel(void)
     }
     else
     {
-        ROS_INFO("filename : %s", filename);
         mnew = mj_loadXML(filename, NULL, error, 500);
     }
-
     if (!mnew)
     {
         printf("%s\n", error);
@@ -62,7 +58,6 @@ void loadmodel(void)
                error);
         settings.run = 0;
     }
-    
 
     // delete old model, assign new
     mj_deleteData(d);
@@ -132,6 +127,7 @@ int main(int argc, char **argv)
     nh.param("use_shm", use_shm, false);
     sim_command_sub = nh.subscribe<std_msgs::String>("/mujoco_ros_interface/sim_command_con2sim", 100, sim_command_callback);
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con", 1);
+    force_apply_sub = nh.subscribe("/tocabi_avatar/applied_ext_force", 10, &force_apply_callback);
 
     if (!use_shm)
     {        
@@ -196,7 +192,7 @@ int main(int argc, char **argv)
     if (nh.getParam("model_file", model_file))
     {
         mju_strncpy(filename, model_file.c_str(), 1000);
-        settings.loadrequest = 1;
+        settings.loadrequest = 2;
         ROS_INFO("model is at %s", model_file.c_str());
     }
 

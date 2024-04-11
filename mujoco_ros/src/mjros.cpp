@@ -46,6 +46,7 @@ void c_reset()
 
 void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
 {
+
     com_time = ros::Time::now().toSec() - msg->header.stamp.toSec();
     dif_time = d->time - msg->time;
     cmd_rcv = true;
@@ -54,71 +55,44 @@ void jointset_callback(const mujoco_ros_msgs::JointSetConstPtr &msg)
 
     ROS_INFO_COND(settings.debug, "TIME INFORMATION :::: state time : %10.5f , command time : %10.5f, time dif : %10.5f , com time : %10.5f ", msg->time, d->time, dif_time, com_time);
 
-    //MODE 0 position
-    //MODE 1 torque
-    if (msg->MODE == 1)
+    if ((msg->time) > (d->time))
     {
-        if (joint_set_msg_.torque.size() == m->nu)
+        ROS_ERROR("JOINT SET COMMAND IS IN FUTURE : current sim time : %10.5f command time : %10.5f", d->time, msg->time);
+        cmd_rcv = false;
+    }
+    else if ((msg->time + 0.01) < (d->time))
+    {
+        ROS_ERROR("Sim time and Command time error exceeds 0.01 sim time : %10.5f command time : %10.5f", d->time, msg->time);
+    }
+    else
+    {
+        //MODE 0 position
+        //MODE 1 torque
+        if (msg->MODE == 1)
         {
-            for (int i = 0; i < m->nu; i++)
-                command[i] = msg->torque[i];
+            if (joint_set_msg_.torque.size() == m->nu)
+            {
+                for (int i = 0; i < m->nu; i++)
+                    command[i] = msg->torque[i];
+            }
+            else
+            {
+                ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
+            }
         }
-        else
+        else if (msg->MODE == 0)
         {
-            ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
+            if (joint_set_msg_.torque.size() == m->nu)
+            {
+                for (int i = 0; i < m->nu; i++)
+                    command[i] = msg->position[i];
+            }
+            else
+            {
+                ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
+            }
         }
     }
-    else if (msg->MODE == 0)
-    {
-        if (joint_set_msg_.torque.size() == m->nu)
-        {
-            for (int i = 0; i < m->nu; i++)
-                command[i] = msg->position[i];
-        }
-        else
-        {
-            ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
-        }
-    }
-
-    // if ((msg->time) > (d->time))
-    // {
-    //     ROS_ERROR("JOINT SET COMMAND IS IN FUTURE : current sim time : %10.5f command time : %10.5f", d->time, msg->time);
-    //     cmd_rcv = false;
-    // }
-    // else if ((msg->time + 0.01) < (d->time))
-    // {
-    //     ROS_ERROR("Sim time and Command time error exceeds 0.01 sim time : %10.5f command time : %10.5f", d->time, msg->time);
-    // }
-    // else
-    // {
-    //     //MODE 0 position
-    //     //MODE 1 torque
-    //     if (msg->MODE == 1)
-    //     {
-    //         if (joint_set_msg_.torque.size() == m->nu)
-    //         {
-    //             for (int i = 0; i < m->nu; i++)
-    //                 command[i] = msg->torque[i];
-    //         }
-    //         else
-    //         {
-    //             ROS_ERROR("TORQUE_MODE :::: Actuator Size Not match ");
-    //         }
-    //     }
-    //     else if (msg->MODE == 0)
-    //     {
-    //         if (joint_set_msg_.torque.size() == m->nu)
-    //         {
-    //             for (int i = 0; i < m->nu; i++)
-    //                 command[i] = msg->position[i];
-    //         }
-    //         else
-    //         {
-    //             ROS_ERROR("POSITION_MODE ::::  Actuator Size Not match ");
-    //         }
-    //     }
-    // }
 }
 
 void sim_command_callback(const std_msgs::StringConstPtr &msg)
@@ -153,6 +127,22 @@ void sim_command_callback(const std_msgs::StringConstPtr &msg)
         std::cout << "SIM slowmotion by msg" << std::endl;
     }
 }
+
+void force_apply_callback(const std_msgs::Float32MultiArray &msg)
+{
+
+    applied_ext_force_[0] = msg.data[0];
+    applied_ext_force_[1] = msg.data[1];
+    applied_ext_force_[2] = msg.data[2];
+    applied_ext_force_[3] = msg.data[3];
+    applied_ext_force_[4] = msg.data[4];
+    applied_ext_force_[5] = msg.data[5];
+
+    force_appiedd_link_idx_ = msg.data[6];
+
+    ext_force_applied_ = true;
+}
+
 void rosPollEvents()
 {
     if (reset_request)
@@ -260,6 +250,7 @@ void state_publisher_init()
 
     sim_status_msg_.sensor = sensor_state_msg_.sensor;
 
+    applied_ext_force_.resize(6);    
     // std::cout << "force range " << std::endl;
     // for (int i = 0; i < m->nu; i++)
     // {
@@ -515,6 +506,35 @@ void mycontroller(const mjModel *m, mjData *d)
         if (ros_sim_started)
         {
             state_publisher();
+            double ros_time_now, ros_time_avatar_mode11;
+            ros_time_now = ros::Time::now().toSec();
+            // ros::param::get("tocabi_avatar_thread11_start_time", ros_time_avatar_mode11);
+            //apply force (dg add)
+            int link_idx = 6*force_appiedd_link_idx_;
+            if( ext_force_applied_ )
+            {
+                // force on the pelvis in global frame
+                // d->qfrc_applied[0] = 100; // x-axis
+                // d->qfrc_applied[1] = 10; // y-axis
+
+                // d->qfrc_applied[2] = -50;
+                // d->xfrc_applied[0] = 50;
+                // d->xfrc_applied[1] = 20;
+
+                //L_Shoulder1_Link
+                // d->xfrc_applied[6*19+0] = 00;
+                // d->xfrc_applied[6*19+1] = 00;
+                // d->xfrc_applied[6*19+2] = -50;
+                // d->qfrc_applied[9] = 1;
+                // d->qfrc_applied[15] = 1;
+
+                d->xfrc_applied[link_idx+0] = applied_ext_force_[0];
+                d->xfrc_applied[link_idx+1] = applied_ext_force_[1];
+                d->xfrc_applied[link_idx+2] = applied_ext_force_[2];
+                d->xfrc_applied[link_idx+3] = applied_ext_force_[3];
+                d->xfrc_applied[link_idx+4] = applied_ext_force_[4];
+                d->xfrc_applied[link_idx+5] = applied_ext_force_[5];
+            }
 
             if (use_shm)
             {
@@ -1969,6 +1989,83 @@ void uiEvent(mjuiState *state)
     }
 }
 
+void arrowshow(mjvGeom* arrow)
+{
+    arrow = scn.geoms + scn.ngeom; 
+    makeArrow(arrow);
+    scn.ngeom++;
+
+    mjtNum force_vec[3] = {-applied_ext_force_[1], applied_ext_force_[0], 0.0};
+    double force = mju_normalize3(force_vec);
+    double arrow_length_ = 1.5;
+    double theta = atan2(-applied_ext_force_[1],applied_ext_force_[0]);
+
+    if(force > 0.0 && (applied_ext_force_[0] == 0.0 || applied_ext_force_[1] == 0.0))
+    {
+        arrow->size[0] = 0.04f;
+        arrow->size[1] = 0.04f;
+        arrow->size[2] = arrow_length_;
+
+        arrow->pos[0] = d->xpos[3 * force_appiedd_link_idx_ + 0] - 0.5*arrow_length_*mju_sign(force_vec[1]);
+        arrow->pos[1] = d->xpos[3 * force_appiedd_link_idx_ + 1] + 0.5*arrow_length_*mju_sign(force_vec[0]);
+        arrow->pos[2] = d->xpos[3 * force_appiedd_link_idx_ + 2] + 0.2; // You can adjust the z position of the arrow by modifying the constant.
+    }
+    else if (force > 0.0)
+    {
+        arrow->size[0] = 0.04f;
+        arrow->size[1] = 0.04f;
+        arrow->size[2] = arrow_length_;
+
+        arrow->pos[0] = d->xpos[3 * force_appiedd_link_idx_ + 0] - 0.5*arrow_length_*abs(cos(theta))*mju_sign(force_vec[1]);
+        arrow->pos[1] = d->xpos[3 * force_appiedd_link_idx_ + 1] + 0.5*arrow_length_*abs(sin(theta))*mju_sign(force_vec[0]);
+        arrow->pos[2] = d->xpos[3 * force_appiedd_link_idx_ + 2] + 0.2;
+    }
+    else
+    {
+        arrow->size[0] = 0.0;
+        arrow->size[1] = 0.0;
+        arrow->size[2] = 0.0;
+    }      
+
+    mjtNum quat[4], mat[9];
+    
+    mju_axisAngle2Quat(quat, force_vec, 0.5 * mjPI * ((force > 0) ? 1 : -1));
+    mju_quat2Mat(mat, quat);
+    mju_n2f(arrow->mat, mat, 9);
+
+    // std::cout << "applied_ext_force_ " << applied_ext_force_[0] << " " << applied_ext_force_[1] << " " << applied_ext_force_[2] << std::endl;
+}
+
+void makeArrow(mjvGeom* arrow)
+{
+    
+	arrow->type = mjGEOM_ARROW;
+	arrow->dataid = -1;
+	arrow->objtype = mjOBJ_SITE;
+	arrow->objid = -1;
+	arrow->category = mjCAT_DECOR;
+	arrow->texid = -1;
+	arrow->texuniform = 0;
+	arrow->texrepeat[0] = 1;
+	arrow->texrepeat[1] = 1;
+	arrow->emission = 0;
+	arrow->specular = 0.5;
+	arrow->shininess = 0.5;
+	arrow->reflectance = 0;
+	arrow->label[0] = 0;
+	arrow->size[0] = 0.04f;
+	arrow->size[1] = 0.04f;
+	arrow->size[2] = 1.0f;
+	arrow->rgba[0] = 1.0f;
+	arrow->rgba[1] = 0.1f;
+	arrow->rgba[2] = 0.1f;
+	arrow->rgba[3] = 1.0f;
+	arrow->pos[0] = d->xpos[3*force_appiedd_link_idx_ + 0];
+	arrow->pos[1] = d->xpos[3*force_appiedd_link_idx_ + 1];
+	arrow->pos[2] = d->xpos[3*force_appiedd_link_idx_ + 2];
+}
+
+
 //--------------------------- rendering and simulation ----------------------------------
 
 // sim thread synchronization
@@ -2057,6 +2154,8 @@ void render(GLFWwindow *window)
 
         return;
     }
+
+    arrowshow(arrow);
 
     // render scene
     mjr_render(rect, &scn, &con);
