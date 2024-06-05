@@ -134,9 +134,9 @@ void force_apply_callback(const mujoco_ros_msgs::applyforce &msg)
     applied_ext_force_[0] = msg.wrench.force[0];
     applied_ext_force_[1] = msg.wrench.force[1];
     applied_ext_force_[2] = msg.wrench.force[2];
-    applied_ext_force_[3] = msg.wrench.torque[3];
-    applied_ext_force_[4] = msg.wrench.torque[4];
-    applied_ext_force_[5] = msg.wrench.torque[5];
+    applied_ext_force_[3] = msg.wrench.torque[0];
+    applied_ext_force_[4] = msg.wrench.torque[1];
+    applied_ext_force_[5] = msg.wrench.torque[2];
 
     force_appiedd_link_idx_ = msg.link_idx;
 
