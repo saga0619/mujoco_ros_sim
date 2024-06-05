@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
+  applyforce.msg
   JointInit.msg
   JointSet.msg
   JointState.msg
