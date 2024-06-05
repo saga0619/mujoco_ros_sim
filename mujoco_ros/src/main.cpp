@@ -127,6 +127,7 @@ int main(int argc, char **argv)
     nh.param("use_shm", use_shm, false);
     sim_command_sub = nh.subscribe<std_msgs::String>("/mujoco_ros_interface/sim_command_con2sim", 100, sim_command_callback);
     sim_command_pub = nh.advertise<std_msgs::String>("/mujoco_ros_interface/sim_command_sim2con", 1);
+    force_apply_sub = nh.subscribe("/mujoco_ros_interface/applied_ext_force", 10, &force_apply_callback);
 
     if (!use_shm)
     {        
