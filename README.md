@@ -42,18 +42,22 @@ you can test mujoco_ros_sim with dyros_red or dyros_jet
 * mujoco_ros_msgs::applyforce : link index, force(3), torque(3) command from controller.
 Modify the controller to recognize applyforce.msg, and configure the publisher to publish as shown below.
 ```
+#define DEG2RAD (0.01745329251994329576923690768489)
+
 ros::Publisher mujoco_ext_force_apply_pub;
 mujoco_ext_force_apply_pub = nh_.advertise<mujoco_ros_msgs::applyforce>("/mujoco_ros_interface/applied_ext_force", 10);
 mujoco_ros_msgs::applyforce mujoco_applied_ext_force_;
 
+double force_temp_ = 100, theta_temp_ = 0; //100 N, 0 degree
+
 if (tick >= 0 && tick < 2000) // (Example) in 2000hz loop, apply force for 1 second.
 {    
-  mujoco_applied_ext_force_.wrench.force[0] = force_temp_*sin(theta_temp_*DEG2RAD); //x-axis linear force
-  mujoco_applied_ext_force_.wrench.force[1] = -force_temp_*cos(theta_temp_*DEG2RAD); //y-axis linear force  
-  mujoco_applied_ext_force_.wrench.force[2] = 0.0; //z-axis linear force
-  mujoco_applied_ext_force_.wrench.torque[0] = 0.0; //x-axis angular moment
-  mujoco_applied_ext_force_.wrench.torque[1] = 0.0; //y-axis angular moment
-  mujoco_applied_ext_force_.wrench.torque[2] = 0.0; //z-axis angular moment
+  mujoco_applied_ext_force_.wrench.force.x = force_temp_*sin(theta_temp_*DEG2RAD); //x-axis linear force
+  mujoco_applied_ext_force_.wrench.force.y = -force_temp_*cos(theta_temp_*DEG2RAD); //y-axis linear force  
+  mujoco_applied_ext_force_.wrench.force.z = 0.0; //z-axis linear force
+  mujoco_applied_ext_force_.wrench.torque.x = 0.0; //x-axis angular moment
+  mujoco_applied_ext_force_.wrench.torque.y = 0.0; //y-axis angular moment
+  mujoco_applied_ext_force_.wrench.torque.z = 0.0; //z-axis angular moment
   
   mujoco_applied_ext_force_.link_idx = 1; //link idx; 1:pelvis
   
