@@ -303,7 +303,7 @@ unsigned int force_appiedd_link_idx_;
 mjvGeom* arrow;
 void arrowshow(mjvGeom* arrow);
 void makeArrow(mjvGeom* arrow);
-void force_apply_callback(const std_msgs::Float32MultiArray &msg);
+void force_apply_callback(const mujoco_ros_msgs::applyforce &msg);
 
 //mujoco_ros_msgs::JointState joint_state_msg_;
 //mujoco_ros_msgs::JointSet joint_set_msg_;
