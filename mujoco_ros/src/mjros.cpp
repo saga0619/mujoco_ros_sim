@@ -128,17 +128,17 @@ void sim_command_callback(const std_msgs::StringConstPtr &msg)
     }
 }
 
-void force_apply_callback(const std_msgs::Float32MultiArray &msg)
+void force_apply_callback(const mujoco_ros_msgs::applyforce &msg)
 {
 
-    applied_ext_force_[0] = msg.data[0];
-    applied_ext_force_[1] = msg.data[1];
-    applied_ext_force_[2] = msg.data[2];
-    applied_ext_force_[3] = msg.data[3];
-    applied_ext_force_[4] = msg.data[4];
-    applied_ext_force_[5] = msg.data[5];
+    applied_ext_force_[0] = msg.wrench.force[0];
+    applied_ext_force_[1] = msg.wrench.force[1];
+    applied_ext_force_[2] = msg.wrench.force[2];
+    applied_ext_force_[3] = msg.wrench.torque[3];
+    applied_ext_force_[4] = msg.wrench.torque[4];
+    applied_ext_force_[5] = msg.wrench.torque[5];
 
-    force_appiedd_link_idx_ = msg.data[6];
+    force_appiedd_link_idx_ = msg.link_idx;
 
     ext_force_applied_ = true;
 }

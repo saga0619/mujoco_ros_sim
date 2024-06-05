@@ -36,3 +36,6 @@ you can test mujoco_ros_sim with dyros_red or dyros_jet
 ### Subscriber
 * /mujoco_ros_interface/sim_command_con2sim <std_msgs::String> : simulator <-> controller connector
 * /mujoco_ros_interface/joint_set <mujoco_ros_msgs::JointSet> : position/torque command from controller
+
+### How to Apply External Force
+

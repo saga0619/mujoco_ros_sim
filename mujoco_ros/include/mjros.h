@@ -19,6 +19,7 @@
 #include <mujoco_ros_msgs/SensorState.h>
 #include <mujoco_ros_msgs/JointSet.h>
 #include <mujoco_ros_msgs/SimStatus.h>
+#include <mujoco_ros_msgs/applyforce.h>
 
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
@@ -294,7 +295,8 @@ ros::Publisher sim_status_pub;
 
 // apply external force
 ros::Subscriber force_apply_sub;
-std_msgs::Float32MultiArray ext_force_msg_;
+// std_msgs::Float32MultiArray ext_force_msg_;
+mujoco_ros_msgs::applyforce ext_force_msg_;
 bool ext_force_applied_ = false;
 std::vector<float> applied_ext_force_;
 unsigned int force_appiedd_link_idx_;
