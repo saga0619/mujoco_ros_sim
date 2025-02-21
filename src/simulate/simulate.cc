@@ -1948,7 +1948,12 @@ void Simulate::Sync() {
   }
 
   if (pending_.reset) {
-    mj_resetData(m_, d_);
+    if (m_->nkey) {
+      mj_resetDataKeyframe(m_, d_, 0);
+    }
+    else{
+      mj_resetData(m_, d_);
+    }
     mj_forward(m_, d_);
     load_error[0] = '\0';
     update_profiler = true;
@@ -1956,6 +1961,8 @@ void Simulate::Sync() {
     scrub_index = 0;
     pending_.ui_update_simulation = true;
     pending_.reset = false;
+
+    
   }
 
   if (pending_.align) {

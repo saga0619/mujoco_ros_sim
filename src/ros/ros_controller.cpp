@@ -254,7 +254,6 @@ void MujocoRos::ros_sync(const mjModel *m, mjData *d)
 
     static Eigen::VectorXd q_init = eq_pos.segment(qdiff, m->nu);
 
-
     // if (command_received)
     // {
     //     command_received = false;
@@ -273,12 +272,20 @@ void MujocoRos::ros_sync(const mjModel *m, mjData *d)
     // }
 
     mujoco_command_container command;
-
-    while(spsc_mujoco_joint_command_pop(joint_command_buffer, &command))
+    for (int i = 0; i < m->nu; i++)
     {
+        ctrl_command[i] = 0.0;
+    }
+    while (spsc_mujoco_joint_command_pop(joint_command_buffer, &command))
+    {
+
         if (abs(d->time - command.command_time) > 0.01)
         {
             std::cout << "command time error is too high sim time : " << d->time << " command time : " << command.command_time << std::endl;
+        }
+        else if (d->time < command.command_time)
+        {
+            std::cout << "command time is in the future sim time : " << d->time << " command time : " << command.command_time << std::endl;
         }
         else
         {

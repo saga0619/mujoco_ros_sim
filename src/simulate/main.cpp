@@ -277,7 +277,9 @@ mjModel* LoadModel(const char* file, mj::Simulate& sim) {
 void ros_sync_wrapper(const mjModel* m, mjData* d) {
   if(rclcpp::ok())
   {
-    g_executor->spin_once(std::chrono::nanoseconds(1000));
+    
+
+    // g_executor->spin_once(std::chrono::nanoseconds(1000));
     g_node->ros_sync(m, d);
   }
 }

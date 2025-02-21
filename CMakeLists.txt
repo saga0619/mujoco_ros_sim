@@ -42,6 +42,7 @@ set(SIMULATE_STANDALONE ON)
 
 add_compile_options(-O)
 
+EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE )
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
@@ -78,8 +79,12 @@ include_directories(
     src/simulate
     src/ros)
 
-file(GLOB LIB_MUJOCO "lib/libmujoco.so" "lib/libmujoco.so.3.2.7")
-file(GLOB PLUGIN_MUJOCO "mujoco_plugin/libactuator.so")
+if( ${ARCHITECTURE} STREQUAL "aarch64" )
+  file(GLOB LIB_MUJOCO "lib/aarch64/libmujoco.so" "lib/aarch64/libmujoco.so.3.2.7")
+else()
+  file(GLOB LIB_MUJOCO "lib/x86_64/libmujoco.so" "lib/x86_64/libmujoco.so.3.2.7")
+endif()
+
 
 add_library(mujoco_data_header INTERFACE)
 target_include_directories(mujoco_data_header 
